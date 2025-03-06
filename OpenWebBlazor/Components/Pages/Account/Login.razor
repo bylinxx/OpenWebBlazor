@@ -1,0 +1,52 @@
+@page "/Account/Login"
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Authentication.Cookies
+@using OpenWebBlazor.Components.Auth
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<div>
+    <EditForm FormName="login" Model="_loginModel" OnValidSubmit="OnLogin">
+        <div>
+            <InputText @bind-Value="_loginModel.UserName"></InputText>
+        </div>
+        <div>
+            <InputText @bind-Value="_loginModel.Password" type="password"></InputText>
+        </div>
+        <div>
+            <button type="submit">Login</button>
+        </div>
+    </EditForm>
+</div>
+
+@code {
+
+    class LoginModel
+    {
+        public string UserName { get; set; }
+        public string Password { get; set; }
+    }
+
+    [SupplyParameterFromForm] LoginModel _loginModel { get; set; } = new LoginModel();
+    [CascadingParameter] HttpContext _httpContext { get; set; } = default!;
+
+    private string returnUrl = "/"; // 默认跳转首页
+
+    protected override void OnInitialized()
+    {
+        var uri = new Uri(NavigationManager.Uri);
+        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+        returnUrl = query["returnUrl"] ?? "/";
+    }
+
+    private async Task OnLogin()
+    {
+        if (AuthenticationStateProvider is WebAuthenticationStateProvider authenticationStateProvider)
+        {
+            await authenticationStateProvider.LoginAsync("admin");
+            NavigationManager.NavigateTo(returnUrl, forceLoad: true);
+        }
+    }
+
+}
