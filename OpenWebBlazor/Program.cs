@@ -26,6 +26,8 @@ builder.Services.AddScoped<IAuthorizationHandler, WebAuthorizationHandler>();
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+builder.Services.AddAntDesign();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
