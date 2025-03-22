@@ -1,26 +1,36 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.EntityFrameworkCore;
 using OpenWebBlazor.Components;
 using OpenWebBlazor.Components.Auth;
+using OpenWebBlazor.Models;
+using OpenWebBlazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddHttpContextAccessor();
-builder.Services.AddCascadingAuthenticationState();
+builder.Configuration.AddJsonFile("Secrets/appsettings.json");
 
-builder.Services.AddScoped<AuthenticationStateProvider, WebAuthenticationStateProvider>();
-builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(options =>
+builder.Services.AddHttpContextAccessor();
+
+builder.Services.AddAuthentication("WebAuth")
+    .AddCookie("WebAuth", options =>
     {
+        options.Cookie.Name = "WebAuth";
         options.LoginPath = "/Account/Login";
-        options.LogoutPath = "/Account/Logout";
-        options.ExpireTimeSpan = TimeSpan.FromMinutes(20);
         options.SlidingExpiration = true;
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(20);
     });
+
+builder.Services.AddCascadingAuthenticationState();
 
 builder.Services.AddAuthorizationCore();
 builder.Services.AddScoped<IAuthorizationHandler, WebAuthorizationHandler>();
+
+builder.Services.AddDbContext<WebDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddScoped<UserService>();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()

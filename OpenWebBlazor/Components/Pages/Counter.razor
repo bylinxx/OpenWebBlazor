@@ -1,5 +1,7 @@
 ﻿@page "/counter"
 @attribute [Authorize]
+@using Microsoft.AspNetCore.Authentication
+@inject NavigationManager navigationManager
 
 <PageTitle>Counter</PageTitle>
 
@@ -9,6 +11,7 @@
 
 <button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
 
+
 @code {
     private int currentCount = 0;
 
@@ -16,5 +19,4 @@
     {
         currentCount++;
     }
-
 }
