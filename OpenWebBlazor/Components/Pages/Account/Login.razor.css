@@ -1,7 +1,20 @@
-body {
-    background-color: dodgerblue;
+.root {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(45deg, #1d2327,#1d2327);
 }
 
 .login-box {
-    border:1px solid #ccc;border-radius: 10px;padding: 50px;margin-top: 50%;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    padding: 50px;
+    margin-top: 50%;
+    background-color: rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    color:#fff;
+}
+
+.title, .ant-form label {
+    color: #fff !important;
 }

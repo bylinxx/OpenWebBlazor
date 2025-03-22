@@ -10,13 +10,13 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserService UserService
 
-<div>
+<div class="root">
     <GridRow>
         <GridCol Span="9"></GridCol>
         <GridCol Span="6">
             <div class="login-box">
                 <div style="width: 100%;text-align: center">
-                    <h3>欢迎登录</h3>
+                    <h3 class="title">欢迎登录</h3>
                 </div>
                 <Form Name="login" Model="_loginModel" OnFinish="OnLogin" Method="HttpMethod.Post">
                     <FormItem Label="账户">
