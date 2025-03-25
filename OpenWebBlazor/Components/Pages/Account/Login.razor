@@ -63,14 +63,15 @@
         {
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.Name, loginResult.Name)
+                new Claim(ClaimTypes.Name, loginResult.Name),
+                new Claim("Id",loginResult.Id.ToString())
             };
             var claimsIdentity = new ClaimsIdentity(claims, "WebAuth");
             var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
             var authProperties = new AuthenticationProperties
-            {
-                IsPersistent = false
-            };
+                {
+                    IsPersistent = false
+                };
             await _httpContext.SignInAsync("WebAuth", claimsPrincipal, authProperties);
             NavigationManager.NavigateTo(returnUrl, forceLoad: true);
         }

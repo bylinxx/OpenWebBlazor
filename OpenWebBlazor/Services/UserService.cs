@@ -16,11 +16,11 @@ public class UserService
     public async Task<LoginResult> Login(string username, string password)
     {
         var result = new LoginResult();
-        var userData = await _dbContext.WebUsers.FirstOrDefaultAsync(a => a.Name == username);
+        var userData = await _dbContext.WebUsers.FirstOrDefaultAsync(a => a.UserName == username && a.State == 1);
         if (userData == null)
         {
             result.Success = false;
-            result.Message = "用户不存在";
+            result.Message = "用户不存在或禁止登录";
         }
         else if (userData.Password != password)
         {
@@ -30,7 +30,8 @@ public class UserService
         else
         {
             result.Success = true;
-            result.Name = userData.Name;
+            result.Name = userData.UserName;
+            result.Id = userData.Id;
         }
 
         return result;
@@ -51,7 +52,7 @@ public class UserService
         return users.Select(a => new UserViewModel()
         {
             Id = a.Id,
-            Name = a.Name,
+            Name = a.UserName,
             State = a.State,
             Roles = user_roles.FirstOrDefault(b => b.user_id == a.Id)?.roles.Select(b =>
                 new UserViewModel.RolesViewModel()

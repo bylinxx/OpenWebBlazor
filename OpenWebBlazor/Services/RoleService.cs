@@ -55,4 +55,9 @@ public class RoleService
     {
         return await _dbContext.WebRoles.ToListAsync();
     }
+    public async Task<List<WebRoles>> GetRolesByUserId(int user_id)
+    {
+        var role_ids = await _dbContext.WebUserRoles.Where(a => a.UserId == user_id).Select(a => a.RoleId).ToListAsync();
+        return await _dbContext.WebRoles.Where(a => role_ids.Contains(a.Id)).ToListAsync();
+    }
 }

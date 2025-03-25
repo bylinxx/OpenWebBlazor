@@ -31,6 +31,8 @@ builder.Services.AddDbContext<WebDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<RoleService>();
+builder.Services.AddScoped<MenuService>();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()

@@ -1,0 +1,137 @@
+﻿using Microsoft.EntityFrameworkCore;
+using OpenWebBlazor.Models;
+using OpenWebBlazor.ViewModels;
+
+namespace OpenWebBlazor.Services
+{
+    public class MenuService
+    {
+        private readonly WebDbContext _dbContext;
+        private readonly RoleService _roleService;
+
+        public MenuService(WebDbContext dbContext, RoleService roleService)
+        {
+            _dbContext = dbContext;
+            _roleService = roleService;
+        }
+
+        public async Task<BaseResult> EditMenu(WebMenus menu)
+        {
+            try
+            {
+                var data = await _dbContext.WebMenus.FirstOrDefaultAsync(a => a.Id == menu.Id);
+                if (data == null)
+                {
+                    _dbContext.WebMenus.Add(menu);
+                }
+                else
+                {
+                    data.Name = menu.Name;
+                    data.ParentId = menu.ParentId;
+                    data.Path = menu.Path;
+                    data.Sort = menu.Sort;
+                }
+                await _dbContext.SaveChangesAsync();
+            }
+            catch (Exception e)
+            {
+                return new BaseResult() { Success = false, Message = e.Message };
+            }
+            return new BaseResult { Success = true };
+        }
+
+        // 删除菜单
+        public async Task<BaseResult> DeleteMenu(int id)
+        {
+            var data = await _dbContext.WebMenus.FirstOrDefaultAsync(a => a.Id == id);
+            if (data == null)
+            {
+                return new BaseResult() { Success = false, Message = "Menu not found" };
+            }
+            _dbContext.WebMenus.Remove(data);
+            await _dbContext.SaveChangesAsync();
+            return new BaseResult { Success = true };
+        }
+
+        // 菜单列表
+        public async Task<List<WebMenus>> GetMenus()
+        {
+            return await _dbContext.WebMenus.ToListAsync();
+        }
+
+        // 菜单列表
+        public async Task<List<WebMenuTree>> GetMenuTree(int? user_id)
+        {
+            if (!user_id.HasValue)
+            {
+                var menus = await _dbContext.WebMenus.ToListAsync();
+                return menus.Where(a => a.ParentId == 0).Select(a => new WebMenuTree()
+                {
+                    ParentId = a.ParentId,
+                    Id = a.Id,
+                    Name = a.Name,
+                    Path = a.Path,
+                    Sort = a.Sort,
+                    Items = menus.Where(b => b.ParentId == a.Id).Select(b => new WebMenuTree.ChildItem()
+                    {
+                        Id = b.Id,
+                        Name = b.Name,
+                        Path = b.Path,
+                        Sort = b.Sort
+                    }).OrderBy(b => b.Sort).ToList()
+                }).OrderBy(a => a.Sort).ToList();
+            }
+            else
+            {
+                var userData = await _dbContext.WebUsers.FirstOrDefaultAsync(a => a.Id == user_id);
+                if (userData != null && userData.State != 0)
+                {
+                    var userRoles = await _roleService.GetRolesByUserId(userData.Id);
+                    if (userRoles.Any(a => a.IsSuper))
+                    {
+                        var menus = await _dbContext.WebMenus.ToListAsync();
+                        return menus.Where(a => a.ParentId == 0).Select(a => new WebMenuTree()
+                        {
+                            ParentId = a.ParentId,
+                            Id = a.Id,
+                            Name = a.Name,
+                            Path = a.Path,
+                            Sort = a.Sort,
+                            Items = menus.Where(b => b.ParentId == a.Id).Select(b => new WebMenuTree.ChildItem()
+                            {
+                                Id = b.Id,
+                                Name = b.Name,
+                                Path = b.Path,
+                                Sort = b.Sort
+                            }).OrderBy(b => b.Sort).ToList()
+                        }).OrderBy(a => a.Sort).ToList();
+                    }
+                    else
+                    {
+                        var menus = await _dbContext.WebMenus.ToListAsync();
+                        var userMenuIds = await _dbContext.WebRoleMenus.Where(a => userRoles.Select(b => b.Id).Contains(a.RoleId)).Select(a => a.MenuId).ToListAsync();
+                        return menus.Where(a => a.ParentId == 0 && userMenuIds.Contains(a.Id)).Select(a => new WebMenuTree()
+                        {
+                            ParentId = a.ParentId,
+                            Id = a.Id,
+                            Name = a.Name,
+                            Path = a.Path,
+                            Sort = a.Sort,
+                            Items = menus.Where(b => b.ParentId == a.Id && userMenuIds.Contains(b.Id)).Select(b => new WebMenuTree.ChildItem()
+                            {
+                                Id = b.Id,
+                                Name = b.Name,
+                                Path = b.Path,
+                                Sort = b.Sort
+                            }).OrderBy(b => b.Sort).ToList()
+                        }).OrderBy(a => a.Sort).ToList();
+                    }
+                }
+                else
+                {
+                    return new List<WebMenuTree>();
+                }
+            }
+        }
+    }
+}
