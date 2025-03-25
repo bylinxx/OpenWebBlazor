@@ -9,4 +9,8 @@ public class WebDbContext: DbContext
         
     }
     public DbSet<WebUsers> WebUsers { get; set; }
+    public DbSet<WebRoles> WebRoles { get; set; }
+    public DbSet<WebUserRoles> WebUserRoles { get; set; }
+    public DbSet<WebMenus> WebMenus { get; set; }
+    public DbSet<WebRoleMenus> WebRoleMenus { get; set; }
 }

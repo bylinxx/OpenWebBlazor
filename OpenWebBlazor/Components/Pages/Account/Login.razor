@@ -9,6 +9,7 @@
 @inject NavigationManager NavigationManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserService UserService
+@inject IMessageService MessageService
 
 <div class="root">
     <GridRow>
@@ -16,7 +17,7 @@
         <GridCol Span="6">
             <div class="login-box">
                 <div style="width: 100%;text-align: center">
-                    <h3 class="title">欢迎登录</h3>
+                    <h5 class="title">欢迎登录</h5>
                 </div>
                 <Form Name="login" Model="_loginModel" OnFinish="OnLogin" Method="HttpMethod.Post">
                     <FormItem Label="账户">
@@ -57,13 +58,12 @@
 
     private async Task OnLogin()
     {
-        var login_result = await UserService.Login(_loginModel.UserName, _loginModel.Password);
-        if (login_result)
+        var loginResult = await UserService.Login(_loginModel.UserName, _loginModel.Password);
+        if (loginResult.Success)
         {
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.Name, "admin"),
-                new Claim(ClaimTypes.Role, "admin")
+                new Claim(ClaimTypes.Name, loginResult.Name)
             };
             var claimsIdentity = new ClaimsIdentity(claims, "WebAuth");
             var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
@@ -73,6 +73,10 @@
             };
             await _httpContext.SignInAsync("WebAuth", claimsPrincipal, authProperties);
             NavigationManager.NavigateTo(returnUrl, forceLoad: true);
+        }
+        else
+        {
+            MessageService.Error(loginResult.Message);
         }
     }
 

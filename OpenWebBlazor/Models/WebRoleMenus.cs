@@ -3,12 +3,11 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace OpenWebBlazor.Models;
 
-public class WebUsers
+public class WebRoleMenus
 {
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int Id { get; set; }
-    public string? Name { get; set; }
-    public string? Password { get; set; }
-    public int State { get; set; } = 0;
+    public string RoleId { get; set; }
+    public int MenuId { get; set; }
 }

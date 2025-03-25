@@ -1,3 +1,6 @@
 ﻿html {
-    --ant-primary-color: green;
+    --ant-primary-color: #00b300;
+    --ant-primary-color-hover: #00cc00;
+    --ant-primary-color-active: #006600;
+    --ant-primary-color-outline: rgba(0, 153, 0, 0.2);
 }
