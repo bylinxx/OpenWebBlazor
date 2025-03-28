@@ -64,9 +64,11 @@
                 {
                     Title = data.Id > 0 ? "编辑" : "新建",
                     Content = @<Form @ref="form" Model="data" OnFinish="()=> modalRef.OkAsync(true)" LabelColSpan="6" WrapperColSpan="18">
-        <FormItem Label="上级菜单">
-            <Select DataSource="@_selectListItems" @bind-Value="@data.ParentId"></Select>
-        </FormItem>
+        // <FormItem Label="上级菜单">
+        //     <Select DataSource="@_selectListItems" @bind-Value="@data.ParentId"
+        //             ItemLabel="c=>c.Text"
+        //             ItemValue="c=>c.Value"></Select>
+        // </FormItem>
         <FormItem>
             <Input @bind-Value="@data.Name"></Input>
         </FormItem>
