@@ -9,15 +9,15 @@ public class WebMenus
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int Id { get; set; }
-    [DisplayName("¸¸ÀàId")]
+    [DisplayName("ä¸Šçº§èœå•Id")]
     [Required]
     public int ParentId { get; set; }
     [Required]
-    [DisplayName("²Ëµ¥Ãû³Æ")]
+    [DisplayName("èœå•åç§°")]
     public string Name { get; set; }
-    [DisplayName("²Ëµ¥Â·¾¶")]
+    [DisplayName("èœå•è·¯å¾„")]
     public string Path { get; set; }
     [Required]
-    [DisplayName("ÅÅĞò")]
+    [DisplayName("æ’åº")]
     public int Sort { get; set; }
 }
