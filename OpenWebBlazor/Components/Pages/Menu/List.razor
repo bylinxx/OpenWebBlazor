@@ -16,7 +16,7 @@
     </Row>
 </Content>
 
-<Table @ref="_table" DataSource="_dataSource" TreeChildren="item=>item.Items" @bind-SelectedRows="_selectedRows">
+<Table @ref="_table" DataSource="_dataSource" TreeChildren="item=>item.Items" @bind-SelectedRows="_selectedRows" PaginationPosition="none">
     <Selection />
     <PropertyColumn Property="c=>c.Name" />
     <PropertyColumn Property="c=>c.Path" Width="12%" Sortable />
