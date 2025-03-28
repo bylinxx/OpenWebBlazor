@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -8,8 +9,12 @@ public class WebMenus
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int Id { get; set; }
+    [DisplayName("父类Id")]
     public int ParentId { get; set; }
+    [DisplayName("菜单名称")]
     public string Name { get; set; }
+    [DisplayName("菜单路径")]
     public string Path { get; set; }
+    [DisplayName("排序")]
     public int Sort { get; set; }
 }

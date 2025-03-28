@@ -1,19 +1,18 @@
-﻿namespace OpenWebBlazor.ViewModels
+﻿using System.ComponentModel;
+
+namespace OpenWebBlazor.ViewModels
 {
     public class WebMenuTree
     {
         public int Id { get; set; }
+        [DisplayName("菜单名称")]
         public string Name { get; set; }
+        [DisplayName("菜单路径")]
         public string Path { get; set; }
+        [DisplayName("菜单排序")]
         public int Sort { get; set; }
+        [DisplayName("父类Id")]
         public int ParentId { get; set; }
-        public List<ChildItem> Items { get; set; }
-        public class ChildItem
-        {
-            public int Id { get; set; }
-            public string Name { get; set; }
-            public string Path { get; set; }
-            public int Sort { get; set; }
-        }
+        public List<WebMenuTree> Items { get; set; }
     }
 }

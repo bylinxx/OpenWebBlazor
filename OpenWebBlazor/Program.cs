@@ -27,7 +27,8 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddAuthorizationCore();
 builder.Services.AddScoped<IAuthorizationHandler, WebAuthorizationHandler>();
 
-builder.Services.AddDbContext<WebDbContext>(options =>
+// blazor 不会创建与所需生存期一致的服务范围，不能使用AddDbContext
+builder.Services.AddDbContextFactory<WebDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddScoped<UserService>();

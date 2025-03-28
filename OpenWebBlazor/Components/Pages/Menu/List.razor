@@ -1,7 +1,143 @@
 ﻿@page "/Menu/List"
 
-<PageHeader Title="菜单管理" Subtitle="菜单列表"></PageHeader>
+@using AntDesign.TableModels
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Mvc.Rendering
+@using OpenWebBlazor.Models
+@using OpenWebBlazor.ViewModels
+
+<PageHeader Title="菜单管理" Subtitle="菜单列表" Style="padding:0 24px 24px 0;"></PageHeader>
+
+<Content Style=" padding: 0 24px 24px 0px;">
+    <Row>
+        <GridCol Span="24">
+            <Button Type="ButtonType.Primary" @onclick="()=> Edit(null)">新建</Button>
+            <Button Type="ButtonType.Default">删除全部</Button>
+        </GridCol>
+    </Row>
+</Content>
+
+<Table @ref="_table" DataSource="_dataSource" TreeChildren="item=>item.Items" @bind-SelectedRows="_selectedRows">
+    <Selection />
+    <PropertyColumn Property="c=>c.Name" />
+    <PropertyColumn Property="c=>c.Path" Width="12%" Sortable />
+    <PropertyColumn Property="c=>c.Sort" Width="30%" />
+    <ActionColumn Title="操作">
+        <a @onclick="() => Edit(context)">编辑</a>
+        <a @onclick="() => Delete(context)">删除</a>
+    </ActionColumn>
+</Table>
+
+@inject ModalService ModalService;
+@inject ConfirmService ComfirmService;
+
+@inject OpenWebBlazor.Services.MenuService MenuService;
 
 @code {
+    IEnumerable<WebMenuTree> _selectedRows = [];
+    ITable _table;
+    List<WebMenuTree> _dataSource;
+    int _total;
+    List<SelectListItem> _selectListItems;
 
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        _selectListItems = await MenuService.GetMenuSelectListAsync();
+        _dataSource = await MenuService.GetMenuTreeAsync();
+    }
+
+    void Edit(WebMenuTree? row)
+    {
+        var data = row == null ? new WebMenus() : new WebMenus()
+                {
+                    Id = row.Id,
+                    Name = row.Name,
+                    ParentId = row.ParentId,
+                    Path = row.Path,
+                    Sort = row.Sort
+                };
+        ModalRef<bool> modalRef = default;
+        IForm form = default;
+        modalRef = ModalService.CreateModal<bool>(new()
+                {
+                    Title = data.Id > 0 ? "编辑" : "新建",
+                    Content = @<Form @ref="form" Model="data" OnFinish="()=> modalRef.OkAsync(true)" LabelColSpan="6" WrapperColSpan="18">
+        <FormItem Label="上级菜单">
+            <Select DataSource="@_selectListItems" @bind-Value="@data.ParentId"></Select>
+        </FormItem>
+        <FormItem>
+            <Input @bind-Value="@data.Name"></Input>
+        </FormItem>
+        <FormItem>
+            <Input @bind-Value="@data.Path"></Input>
+        </FormItem>
+        <FormItem>
+            <Input @bind-Value="@data.Sort"></Input>
+        </FormItem>
+    </Form>
+        ,
+            OnOk = async (e) =>
+            {
+                if (!form.Validate())
+                {
+                    return;
+                }
+
+                // save db and refresh
+                modalRef.SetConfirmLoading(true);
+
+                // if (data.Id > 0)
+                // {
+                //     var index = mockDb.FindIndex(x => x.Id == data.Id);
+                //     mockDb[index] = data;
+                // }
+                // else
+                // {
+                //     data.Id = mockDb.Max(x => x.Id) + 1;
+                //     mockDb.Add(data);
+                // }
+
+                await Task.Delay(1000);
+
+                await modalRef.CloseAsync();
+                _table.ReloadData();
+                StateHasChanged();
+            },
+            OnCancel = async (e) =>
+            {
+                if (form.IsModified && (!await Comfirm("The form have been updated, are you sure quit?")))
+                {
+                    return;
+                }
+                await modalRef.CloseAsync();
+            }
+        });
+    }
+
+    async Task DeleteAll()
+    {
+        // if (!await Comfirm($"Are you sure delete {_selectedRows.Count()} rows?"))
+        //     return;
+
+        // mockDb = mockDb.Except(_selectedRows).ToList();
+        // _selectedRows = [];
+        // _table.ReloadData();
+    }
+
+    async Task Delete(WebMenuTree row)
+    {
+        // if (!await Comfirm($"Are you sure delete [{row.Name}]?"))
+        //     return;
+
+        // mockDb = mockDb.Except(new[] { row }).ToList();
+        // _table.ReloadData();
+    }
+
+    private async Task<bool> Comfirm(string message)
+    {
+        // return await ComfirmService.Show(message, "Confirm", ConfirmButtons.YesNo, ConfirmIcon.Warning) == ConfirmResult.Yes;
+        return true;
+    }
 }

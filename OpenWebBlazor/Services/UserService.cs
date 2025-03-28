@@ -6,60 +6,66 @@ namespace OpenWebBlazor.Services;
 
 public class UserService
 {
-    private readonly WebDbContext _dbContext;
+    private readonly IDbContextFactory<WebDbContext> _dbContextFactory;
 
-    public UserService(WebDbContext dbContext)
+    public UserService(IDbContextFactory<WebDbContext> dbContextFactory)
     {
-        _dbContext = dbContext;
+        _dbContextFactory = dbContextFactory;
     }
 
     public async Task<LoginResult> Login(string username, string password)
     {
-        var result = new LoginResult();
-        var userData = await _dbContext.WebUsers.FirstOrDefaultAsync(a => a.UserName == username && a.State == 1);
-        if (userData == null)
+        using (var _dbContext = _dbContextFactory.CreateDbContext())
         {
-            result.Success = false;
-            result.Message = "用户不存在或禁止登录";
-        }
-        else if (userData.Password != password)
-        {
-            result.Success = false;
-            result.Message = "密码错误";
-        }
-        else
-        {
-            result.Success = true;
-            result.Name = userData.UserName;
-            result.Id = userData.Id;
-        }
+            var result = new LoginResult();
+            var userData = await _dbContext.WebUsers.FirstOrDefaultAsync(a => a.UserName == username && a.State == 1);
+            if (userData == null)
+            {
+                result.Success = false;
+                result.Message = "用户不存在或禁止登录";
+            }
+            else if (userData.Password != password)
+            {
+                result.Success = false;
+                result.Message = "密码错误";
+            }
+            else
+            {
+                result.Success = true;
+                result.Name = userData.UserName;
+                result.Id = userData.Id;
+            }
 
-        return result;
+            return result;
+        }
     }
 
     public async Task<List<UserViewModel>> GetUsers()
     {
-        var users = await _dbContext.WebUsers.ToListAsync();
-        var user_ids = users.Select(a => a.Id).ToList();
-        var user_roles = _dbContext.WebUserRoles.Where(a => user_ids.Contains(a.UserId))
-            .Join(_dbContext.WebRoles, a => a.RoleId, b => b.Id, (a, b) => new { a, b })
-            .ToLookup((a => a.a.UserId))
-            .Select((a => new
-            {
-                user_id = a.Key,
-                roles = a.Select((b => b.b)).ToList()
-            })).ToList();
-        return users.Select(a => new UserViewModel()
+        using (var _dbContext = _dbContextFactory.CreateDbContext())
         {
-            Id = a.Id,
-            Name = a.UserName,
-            State = a.State,
-            Roles = user_roles.FirstOrDefault(b => b.user_id == a.Id)?.roles.Select(b =>
-                new UserViewModel.RolesViewModel()
+            var users = await _dbContext.WebUsers.ToListAsync();
+            var user_ids = users.Select(a => a.Id).ToList();
+            var user_roles = _dbContext.WebUserRoles.Where(a => user_ids.Contains(a.UserId))
+                .Join(_dbContext.WebRoles, a => a.RoleId, b => b.Id, (a, b) => new { a, b })
+                .ToLookup((a => a.a.UserId))
+                .Select((a => new
                 {
-                    Id = b.Id,
-                    Name = b.Name
-                }).ToList()
-        }).ToList();
+                    user_id = a.Key,
+                    roles = a.Select((b => b.b)).ToList()
+                })).ToList();
+            return users.Select(a => new UserViewModel()
+            {
+                Id = a.Id,
+                Name = a.UserName,
+                State = a.State,
+                Roles = user_roles.FirstOrDefault(b => b.user_id == a.Id)?.roles.Select(b =>
+                    new UserViewModel.RolesViewModel()
+                    {
+                        Id = b.Id,
+                        Name = b.Name
+                    }).ToList()
+            }).ToList();
+        }
     }
 }
