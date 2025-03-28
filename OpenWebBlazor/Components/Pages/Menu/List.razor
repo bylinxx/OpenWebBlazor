@@ -12,7 +12,6 @@
     <Row>
         <GridCol Span="24">
             <Button Type="ButtonType.Primary" @onclick="()=> Edit(null)">新建</Button>
-            <Button Type="ButtonType.Default">删除全部</Button>
         </GridCol>
     </Row>
 </Content>
@@ -28,6 +27,7 @@
     </ActionColumn>
 </Table>
 
+@inject MessageService MessageService;
 @inject ModalService ModalService;
 @inject ConfirmService ComfirmService;
 
@@ -37,15 +37,19 @@
     IEnumerable<WebMenuTree> _selectedRows = [];
     ITable _table;
     List<WebMenuTree> _dataSource;
-    int _total;
-    List<SelectListItem> _selectListItems;
+    List<MenuSelectItem> _selectMenus;
 
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
 
-        _selectListItems = await MenuService.GetMenuSelectListAsync();
+        await LoadData();
+    }
+    async Task LoadData()
+    {
+        _selectMenus = await MenuService.GetMenuSelectListAsync();
         _dataSource = await MenuService.GetMenuTreeAsync();
+        _table.ReloadData();
     }
 
     void Edit(WebMenuTree? row)
@@ -64,11 +68,9 @@
                 {
                     Title = data.Id > 0 ? "编辑" : "新建",
                     Content = @<Form @ref="form" Model="data" OnFinish="()=> modalRef.OkAsync(true)" LabelColSpan="6" WrapperColSpan="18">
-        // <FormItem Label="上级菜单">
-        //     <Select DataSource="@_selectListItems" @bind-Value="@data.ParentId"
-        //             ItemLabel="c=>c.Text"
-        //             ItemValue="c=>c.Value"></Select>
-        // </FormItem>
+        <FormItem Label="上级菜单">
+            <Select DataSource="@_selectMenus" @bind-Value="@data.ParentId" ValueName="@nameof(MenuSelectItem.Id)" LabelName="@nameof(MenuSelectItem.Name)"></Select>
+        </FormItem>
         <FormItem>
             <Input @bind-Value="@data.Name"></Input>
         </FormItem>
@@ -76,10 +78,10 @@
             <Input @bind-Value="@data.Path"></Input>
         </FormItem>
         <FormItem>
-            <Input @bind-Value="@data.Sort"></Input>
+            <Input @bind-Value="@data.Sort" Type="InputType.Number"></Input>
         </FormItem>
     </Form>
-        ,
+    ,
             OnOk = async (e) =>
             {
                 if (!form.Validate())
@@ -87,29 +89,26 @@
                     return;
                 }
 
-                // save db and refresh
                 modalRef.SetConfirmLoading(true);
 
-                // if (data.Id > 0)
-                // {
-                //     var index = mockDb.FindIndex(x => x.Id == data.Id);
-                //     mockDb[index] = data;
-                // }
-                // else
-                // {
-                //     data.Id = mockDb.Max(x => x.Id) + 1;
-                //     mockDb.Add(data);
-                // }
+                var result = await MenuService.EditMenu(data);
+                if (result.Success)
+                {
+                    await modalRef.CloseAsync();
 
-                await Task.Delay(1000);
+                    MessageService.Success("操作成功");
 
-                await modalRef.CloseAsync();
-                _table.ReloadData();
+                    await LoadData();
+                }
+                else
+                {
+                    MessageService.Error(result.Message);
+                }
                 StateHasChanged();
             },
             OnCancel = async (e) =>
             {
-                if (form.IsModified && (!await Comfirm("The form have been updated, are you sure quit?")))
+                if (form.IsModified && (!await Comfirm("内容已经修改过，确定放弃保存吗？")))
                 {
                     return;
                 }
@@ -118,28 +117,27 @@
         });
     }
 
-    async Task DeleteAll()
-    {
-        // if (!await Comfirm($"Are you sure delete {_selectedRows.Count()} rows?"))
-        //     return;
-
-        // mockDb = mockDb.Except(_selectedRows).ToList();
-        // _selectedRows = [];
-        // _table.ReloadData();
-    }
-
     async Task Delete(WebMenuTree row)
     {
-        // if (!await Comfirm($"Are you sure delete [{row.Name}]?"))
-        //     return;
+        if (!await Comfirm($"确定删除【{row.Name}】吗？"))
+            return;
 
-        // mockDb = mockDb.Except(new[] { row }).ToList();
-        // _table.ReloadData();
+        var result = await MenuService.DeleteMenu(row.Id);
+        if (result.Success)
+        {
+            MessageService.Success("操作成功");
+
+            await LoadData();
+        }
+        else
+        {
+            MessageService.Error(result.Message);
+        }
+        _table.ReloadData();
     }
 
     private async Task<bool> Comfirm(string message)
     {
-        // return await ComfirmService.Show(message, "Confirm", ConfirmButtons.YesNo, ConfirmIcon.Warning) == ConfirmResult.Yes;
-        return true;
+        return await ComfirmService.Show(message, "确认操作", ConfirmButtons.YesNo, ConfirmIcon.Warning) == ConfirmResult.Yes;
     }
 }

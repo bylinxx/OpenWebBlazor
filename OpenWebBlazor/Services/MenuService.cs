@@ -26,6 +26,7 @@ namespace OpenWebBlazor.Services
                 var data = await _dbContext.WebMenus.FirstOrDefaultAsync(a => a.Id == menu.Id);
                 if (data == null)
                 {
+                    menu.Path = menu.Path ?? String.Empty;
                     _dbContext.WebMenus.Add(menu);
                 }
                 else
@@ -49,7 +50,14 @@ namespace OpenWebBlazor.Services
             var data = await _dbContext.WebMenus.FirstOrDefaultAsync(a => a.Id == id);
             if (data == null)
             {
-                return new BaseResult() { Success = false, Message = "Menu not found" };
+                return new BaseResult() { Success = false, Message = "找不到记录" };
+            }
+            else
+            {
+                if (_dbContext.WebMenus.Any(a => a.ParentId == id))
+                {
+                    return new BaseResult() { Success = false, Message = "请先删除下属子菜单" };
+                }
             }
             _dbContext.WebMenus.Remove(data);
             await _dbContext.SaveChangesAsync();
@@ -133,6 +141,7 @@ namespace OpenWebBlazor.Services
                 Items = menus.Where(b => b.ParentId == a.Id).Select(b => new WebMenuTree()
                 {
                     Id = b.Id,
+                    ParentId = b.ParentId,
                     Name = b.Name,
                     Path = b.Path,
                     Sort = b.Sort
@@ -143,14 +152,15 @@ namespace OpenWebBlazor.Services
         /// 
         /// </summary>
         /// <returns></returns>
-        public async Task<List<SelectListItem>> GetMenuSelectListAsync()
+        public async Task<List<MenuSelectItem>> GetMenuSelectListAsync()
         {
-            var data = await _dbContext.WebMenus.Where(a => a.ParentId == 0).Select(a => new { a.Id, a.Name }).AsNoTracking().ToListAsync();
-            return data.Select(a => new SelectListItem()
+            var list = new List<MenuSelectItem>()
             {
-                Text = a.Name,
-                Value = a.Id.ToString()
-            }).ToList();
+                new MenuSelectItem(){ Id = 0, Name = "根菜单"}
+            };
+            var data = await _dbContext.WebMenus.Where(a => a.ParentId == 0).AsNoTracking().ToListAsync();
+            list.AddRange(data.Select(a => new MenuSelectItem() { Id = a.Id, Name = a.Name }));
+            return list;
         }
     }
 }
