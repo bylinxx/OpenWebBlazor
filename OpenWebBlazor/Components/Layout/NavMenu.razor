@@ -17,10 +17,8 @@
                 <SubMenu Key="@item.Id.ToString()" Title="@item.Name">
                     @foreach (var child in item.Items)
                     {
-                        <MenuItem Key="@child.Id.ToString()">
-                            <NavLink class="nav-link" href="@child.Path">
-                                @child.Name
-                            </NavLink>
+                        <MenuItem Key="@child.Id.ToString()" RouterLink="@child.Path">
+                            @child.Name
                         </MenuItem>
                     }
                 </SubMenu>
@@ -42,7 +40,6 @@
         {
             webMenuTrees = await MenuService.GetMenuTreeAsync(user_id);
         }
-
         await base.OnInitializedAsync();
     }
 }
