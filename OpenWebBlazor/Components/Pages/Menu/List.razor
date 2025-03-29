@@ -49,7 +49,7 @@
     {
         _selectMenus = await MenuService.GetMenuSelectListAsync();
         _dataSource = await MenuService.GetMenuTreeAsync();
-        _table.ReloadData();
+        StateHasChanged();
     }
 
     void Edit(WebMenuTree? row)
@@ -133,7 +133,6 @@
         {
             MessageService.Error(result.Message);
         }
-        _table.ReloadData();
     }
 
     private async Task<bool> Comfirm(string message)

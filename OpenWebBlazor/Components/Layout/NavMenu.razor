@@ -10,24 +10,27 @@
 </div>
 <div class="nav-scrollable">
     <Menu Mode="MenuMode.Inline" Accordion="true">
-        @foreach (var item in webMenuTrees)
+        @if (webMenuTrees != null)
         {
-            <SubMenu Key="@item.Id.ToString()" Title="@item.Name">
-                @foreach (var child in item.Items)
-                {
-                    <MenuItem Key="@child.Id.ToString()">
-                        <NavLink class="nav-link" href="@child.Path">
-                            @child.Name
-                        </NavLink>
-                    </MenuItem>
-                }
-            </SubMenu>
+            @foreach (var item in webMenuTrees)
+            {
+                <SubMenu Key="@item.Id.ToString()" Title="@item.Name">
+                    @foreach (var child in item.Items)
+                    {
+                        <MenuItem Key="@child.Id.ToString()">
+                            <NavLink class="nav-link" href="@child.Path">
+                                @child.Name
+                            </NavLink>
+                        </MenuItem>
+                    }
+                </SubMenu>
+            }
         }
     </Menu>
 </div>
 
 @code {
-    private List<WebMenuTree> webMenuTrees { get; set; } = new List<WebMenuTree>();
+    private List<WebMenuTree> webMenuTrees { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -39,5 +42,7 @@
         {
             webMenuTrees = await MenuService.GetMenuTreeAsync(user_id);
         }
+
+        await base.OnInitializedAsync();
     }
 }

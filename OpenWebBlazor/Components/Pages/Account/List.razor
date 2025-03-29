@@ -51,23 +51,25 @@
     List<UserList> _dataSource;
     ITable _table;
     int _total;
-    protected override async Task OnInitializedAsync()
-    {
-
-        await base.OnInitializedAsync();
-    }
+    // protected override async Task OnInitializedAsync()
+    // {
+    //     await base.OnInitializedAsync();
+    // }
 
     async void OnChange(QueryModel<UserList> query)
-    {
-        await LoadData(query);
-    }
-
-    async Task LoadData(QueryModel<UserList> query)
     {
         var data = await UserService.GetList(query);
         _dataSource = data.Data;
         _total = data.Total;
-        _table.ReloadData();
+        StateHasChanged();
+    }
+
+    async Task LoadData(QueryModel<UserList> query)
+    {
+        // var data = await UserService.GetList(query);
+        // _dataSource = data.Data;
+        // _total = data.Total;
+        // StateHasChanged();
     }
 
     void Edit(UserList row)

@@ -61,7 +61,7 @@ public class UserService
                 {
                     Id = b.Id,
                     Name = b.Name
-                }).ToList()
+                }).ToList() ?? new List<UserList.RolesViewModel>()
         }).ToList();
 
         return new ListResult<UserList>()
@@ -77,7 +77,7 @@ public class UserService
             var _model = await _dbContext.WebUsers.FirstOrDefaultAsync(a => a.Id == model.Id);
             if (_model == null)
             {
-                _dbContext.WebUsers.Add(_model);
+                _dbContext.WebUsers.Add(model);
             }
             else
             {
