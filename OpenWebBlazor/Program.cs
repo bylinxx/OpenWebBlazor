@@ -29,7 +29,7 @@ builder.Services.AddScoped<IAuthorizationHandler, WebAuthorizationHandler>();
 
 // blazor 不会创建与所需生存期一致的服务范围，不能使用AddDbContext
 builder.Services.AddDbContext<WebDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")), ServiceLifetime.Transient);
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddTransient<UserService>();
 builder.Services.AddTransient<RoleService>();
