@@ -8,9 +8,9 @@ public class WebRoles
     [Key]
     public string Id { get; set; }
     [Required]
-    [DisplayName("角色名称")]
+    [DisplayName("瑙掕壊鍚嶇О")]
     public string Name { get; set; }
     [Required]
-    [DisplayName("是否超管")]
+    [DisplayName("鏄惁瓒呯")]
     public bool IsSuper { get; set; }
 }
