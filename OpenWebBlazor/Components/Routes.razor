@@ -1,0 +1,23 @@
+﻿@using OpenWebBlazor.Components.Pages.Shared
+<CascadingAuthenticationState>
+    <Router AppAssembly="typeof(Program).Assembly">
+        <Found Context="routeData">
+            <AuthorizeRouteView Resource="routeData" RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
+                <NotAuthorized>
+                    @if (context.User.Identity.IsAuthenticated == false)
+                    {
+                        <RedirectToLogin/>
+                    }
+                    else
+                    {
+                        <p>未授权提示</p>
+                    }
+                </NotAuthorized>
+
+            </AuthorizeRouteView>
+            <FocusOnNavigate RouteData="routeData" Selector="h1"/>
+        </Found>
+    </Router>
+    
+    <AntContainer></AntContainer>
+</CascadingAuthenticationState>

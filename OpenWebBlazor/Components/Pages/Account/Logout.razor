@@ -1,0 +1,15 @@
+@page "/Account/Logout"
+@using Microsoft.AspNetCore.Authentication
+@using OpenWebBlazor.Components.Auth
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+@code {
+    [CascadingParameter] HttpContext _httpContext { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await _httpContext.SignOutAsync();
+        NavigationManager.NavigateTo("/");
+    }
+}
