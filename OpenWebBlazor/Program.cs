@@ -9,6 +9,7 @@ using OpenWebBlazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// 数据库连接等敏感配置
 builder.Configuration.AddJsonFile("Secrets/appsettings.json");
 
 builder.Services.AddHttpContextAccessor();
@@ -27,7 +28,6 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddAuthorizationCore();
 builder.Services.AddScoped<IAuthorizationHandler, WebAuthorizationHandler>();
 
-// blazor 不会创建与所需生存期一致的服务范围，不能使用AddDbContext
 builder.Services.AddDbContext<WebDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")), ServiceLifetime.Transient);
 
