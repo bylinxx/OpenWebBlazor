@@ -7,7 +7,7 @@
     {
         await base.OnInitializedAsync();
         var returnUrl = Uri.EscapeDataString(NavigationManager.Uri);
-        NavigationManager.NavigateTo($"/NotAuthorized?returnUrl={returnUrl}", forceLoad: true);
+        NavigationManager.NavigateTo($"/NotFound?returnUrl={returnUrl}", forceLoad: true);
     }
 
 }

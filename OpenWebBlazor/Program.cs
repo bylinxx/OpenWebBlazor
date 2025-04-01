@@ -19,6 +19,8 @@ builder.Services.AddAuthentication("WebAuth")
     {
         options.Cookie.Name = "WebAuth";
         options.LoginPath = "/Account/Login";
+        options.LogoutPath = "/Account/Logout";
+        options.AccessDeniedPath = "/NotAuthorized";
         options.SlidingExpiration = true;
         options.ExpireTimeSpan = TimeSpan.FromMinutes(20);
     });
@@ -50,6 +52,8 @@ if (!app.Environment.IsDevelopment())
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
+
+app.UseStatusCodePagesWithReExecute("/NotFound", "?statusCode={0}");
 
 app.UseHttpsRedirection();
 
