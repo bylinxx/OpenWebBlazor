@@ -6,18 +6,26 @@
                 <NotAuthorized>
                     @if (context.User.Identity.IsAuthenticated == false)
                     {
-                        <RedirectToLogin/>
+                        <RedirectToLogin />
                     }
                     else
                     {
                         <RedirectToAuth></RedirectToAuth>
                     }
                 </NotAuthorized>
-
+                <Authorizing>
+                    <div style="position: fixed;left:50%;top:40%;">
+                        <Spin Size="SpinSize.Large" Indicator="@antIcon" />
+                    </div>
+                </Authorizing>
             </AuthorizeRouteView>
-            <FocusOnNavigate RouteData="routeData" Selector="h1"/>
+            <FocusOnNavigate RouteData="routeData" Selector="h1" />
         </Found>
     </Router>
-    
+
     <AntContainer></AntContainer>
 </CascadingAuthenticationState>
+
+@code {
+    RenderFragment antIcon = @<Icon Type="@IconType.Outline.Loading" Style="font-size: 48px" Spin />;
+}
