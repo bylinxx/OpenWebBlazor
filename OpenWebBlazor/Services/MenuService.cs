@@ -34,6 +34,8 @@ namespace OpenWebBlazor.Services
                     data.Name = menu.Name;
                     data.ParentId = menu.ParentId;
                     data.Path = menu.Path;
+                    data.IsShow = menu.IsShow;
+                    data.IsAuth = menu.IsAuth;
                     data.Sort = menu.Sort;
                 }
                 await _dbContext.SaveChangesAsync();
@@ -104,9 +106,9 @@ namespace OpenWebBlazor.Services
                 }
                 else
                 {
-                    var menus = await _dbContext.WebMenus.ToListAsync();
-                    var userMenuIds = await _dbContext.WebRoleMenus.Where(a => userRoles.Select(b => b.Id).Contains(a.RoleId)).Select(a => a.MenuId).ToListAsync();
-                    return menus.Where(a => a.ParentId == 0 && userMenuIds.Contains(a.Id)).Select(a => new WebMenuTree()
+                    var menus = await _dbContext.WebMenus.Where(a => a.IsShow).ToListAsync();
+                    var userMenuIds = await _dbContext.WebMenuRoles.Where(a => userRoles.Select(b => b.Id).Contains(a.RoleId)).Select(a => a.MenuId).ToListAsync();
+                    return menus.Where(a => a.ParentId == 0).Select(a => new WebMenuTree()
                     {
                         ParentId = a.ParentId,
                         Id = a.Id,
@@ -120,7 +122,7 @@ namespace OpenWebBlazor.Services
                             Path = b.Path,
                             Sort = b.Sort
                         }).OrderBy(b => b.Sort).ToList()
-                    }).OrderBy(a => a.Sort).ToList();
+                    }).Where(a => a.Items.Any()).OrderBy(a => a.Sort).ToList();
                 }
             }
             else
@@ -131,6 +133,8 @@ namespace OpenWebBlazor.Services
         public async Task<List<WebMenuTree>> GetMenuTreeAsync()
         {
             var menus = await _dbContext.WebMenus.ToListAsync();
+            var menu_ids = menus.Select(a => a.Id).ToList();
+            var menu_roles = await _dbContext.WebMenuRoles.Where(a => menu_ids.Contains(a.MenuId)).ToListAsync();
             return menus.Where(a => a.ParentId == 0).Select(a => new WebMenuTree()
             {
                 ParentId = a.ParentId,
@@ -138,13 +142,18 @@ namespace OpenWebBlazor.Services
                 Name = a.Name,
                 Path = a.Path,
                 Sort = a.Sort,
+                IsShow = a.IsShow,
+                IsAuth = a.IsAuth,
                 Items = menus.Where(b => b.ParentId == a.Id).Select(b => new WebMenuTree()
                 {
                     Id = b.Id,
                     ParentId = b.ParentId,
                     Name = b.Name,
                     Path = b.Path,
-                    Sort = b.Sort
+                    Sort = b.Sort,
+                    IsShow = b.IsShow,
+                    IsAuth = b.IsAuth,
+                    RoleIds = menu_roles.Where(c => c.MenuId == b.Id).Select(c => c.RoleId).ToList()
                 }).OrderBy(b => b.Sort).ToList()
             }).OrderBy(a => a.Sort).ToList();
         }
@@ -161,6 +170,34 @@ namespace OpenWebBlazor.Services
             var data = await _dbContext.WebMenus.Where(a => a.ParentId == 0).AsNoTracking().ToListAsync();
             list.AddRange(data);
             return list;
+        }
+        public async Task<BaseResult> SetRoles(MenuRole model)
+        {
+            var menu_data = await _dbContext.WebMenus.FirstOrDefaultAsync(a => a.Id == model.MenuId);
+            if (menu_data == null)
+            {
+                return new BaseResult() { Success = false, Message = "菜单不存在" };
+            }
+            else
+            {
+                var menu_roles = await _dbContext.WebMenuRoles.Where(a => a.MenuId == menu_data.Id).ToListAsync();
+                var delete_roles = menu_roles.Where(a => !model.RoleIds.Contains(a.RoleId)).ToList();
+                foreach (var item in delete_roles)
+                {
+                    _dbContext.WebMenuRoles.Remove(item);
+                }
+                var add_roles = model.RoleIds.Where(a => !menu_roles.Select(b => b.RoleId).Contains(a)).ToList();
+                foreach (var item in add_roles)
+                {
+                    _dbContext.WebMenuRoles.Add(new WebMenuRoles()
+                    {
+                        MenuId = menu_data.Id,
+                        RoleId = item
+                    });
+                }
+                await _dbContext.SaveChangesAsync();
+                return new BaseResult() { Success = true };
+            }
         }
     }
 }

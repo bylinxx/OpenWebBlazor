@@ -17,6 +17,10 @@ public class WebMenus
     public string Name { get; set; }
     [DisplayName("菜单路径")]
     public string Path { get; set; }
+    [DisplayName("是否显示")]
+    public bool IsShow { get; set; }
+    [DisplayName("是否需要授权")]
+    public bool IsAuth { get; set; }
     [Required]
     [DisplayName("排序")]
     public int Sort { get; set; }

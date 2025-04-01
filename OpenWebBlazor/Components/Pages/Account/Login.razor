@@ -65,7 +65,7 @@
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.Name, loginResult.Name),
-                new Claim("Id",loginResult.Id.ToString())
+                new Claim("UserId",loginResult.Id.ToString())
             };
             var claimsIdentity = new ClaimsIdentity(claims, "WebAuth");
             var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);

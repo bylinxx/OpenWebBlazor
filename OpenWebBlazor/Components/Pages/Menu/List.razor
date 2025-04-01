@@ -17,14 +17,46 @@
 </Content>
 
 <Table @ref="_table" DataSource="_dataSource" TreeChildren="item=>item.Items" @bind-SelectedRows="_selectedRows" PaginationPosition="none">
-    <Selection />
-    <PropertyColumn Property="c=>c.Name" />
-    <PropertyColumn Property="c=>c.Path" Width="12%" Sortable />
-    <PropertyColumn Property="c=>c.Sort" Width="30%" />
-    <ActionColumn Title="操作">
-        <Button @onclick="() => Edit(context)">编辑</Button>
-        <Button Danger @onclick="() => Delete(context)">删除</Button>
-    </ActionColumn>
+    <ColumnDefinitions>
+        <PropertyColumn Property="c=>c.Name" />
+        <PropertyColumn Property="c=>c.Path" Width="30%" Sortable />
+        <PropertyColumn Property="c=>c.IsShow">
+            @if (context.IsShow)
+            {
+                <span>显示</span>
+            }
+            else
+            {
+                <span>隐藏</span>
+            }
+        </PropertyColumn>
+        <PropertyColumn Property="c=>c.IsAuth">
+            @if (context.ParentId != 0)
+            {
+                @if (context.IsAuth)
+                {
+                    <span>需要</span>
+                }
+                else
+                {
+                    <span>不需要</span>
+                }
+            }
+        </PropertyColumn>
+        <PropertyColumn Property="c=>c.Sort" Width="10%" />
+        <ActionColumn Title="操作">
+            @if (context.ParentId != 0)
+            {
+                <Button @onclick="() => SetRole(context)">设置权限</Button>
+            }
+            else
+            {
+                <Button @onclick="() => Edit(new WebMenuTree(){ Id = 0,ParentId = context.Id,IsShow = true,IsAuth = true })">新建菜单</Button>
+            }
+            <Button @onclick="() => Edit(context)">编辑</Button>
+            <Button Danger @onclick="() => Delete(context)">删除</Button>
+        </ActionColumn>
+    </ColumnDefinitions>
 </Table>
 
 @inject MessageService MessageService;
@@ -32,6 +64,7 @@
 @inject ConfirmService ComfirmService;
 
 @inject OpenWebBlazor.Services.MenuService MenuService;
+@inject OpenWebBlazor.Services.RoleService RoleService;
 
 @code {
     IEnumerable<WebMenuTree> _selectedRows = [];
@@ -52,13 +85,15 @@
 
     async Task Edit(WebMenuTree? row)
     {
-        var data = row == null ? new WebMenus() : new WebMenus()
+        var data = row == null ? new WebMenus() { IsShow = true, IsAuth = true } : new WebMenus()
                 {
                     Id = row.Id,
                     Name = row.Name,
                     ParentId = row.ParentId,
                     Path = row.Path,
-                    Sort = row.Sort
+                    Sort = row.Sort,
+                    IsShow = row.IsShow,
+                    IsAuth = row.IsAuth
                 };
         ModalRef<bool> modalRef = default;
         IForm form = default;
@@ -79,43 +114,55 @@
             <Input @bind-Value="@data.Path"></Input>
         </FormItem>
         <FormItem>
+            <RadioGroup @bind-Value="@data.IsShow">
+                <Radio Value="true">显示</Radio>
+                <Radio Value="false">隐藏</Radio>
+            </RadioGroup>
+        </FormItem>
+        <FormItem>
+            <RadioGroup @bind-Value="@data.IsAuth">
+                <Radio Value="true">需要</Radio>
+                <Radio Value="false">不需要</Radio>
+            </RadioGroup>
+        </FormItem>
+        <FormItem>
             <Input @bind-Value="@data.Sort" Type="InputType.Number"></Input>
         </FormItem>
     </Form>
-    ,
-            OnOk = async (e) =>
-            {
-                if (!form.Validate())
-                {
-                    return;
-                }
+                                                                    ,
+                OnOk = async (e) =>
+{
+if (!form.Validate())
+{
+    return;
+}
 
-                modalRef.SetConfirmLoading(true);
+modalRef.SetConfirmLoading(true);
 
-                var result = await MenuService.EditMenu(data);
-                if (result.Success)
-                {
-                    await modalRef.CloseAsync();
+var result = await MenuService.EditMenu(data);
+if (result.Success)
+{
+    await modalRef.CloseAsync();
 
-                    MessageService.Success("操作成功");
+    MessageService.Success("操作成功");
 
-                    await LoadData();
-                }
-                else
-                {
-                    MessageService.Error(result.Message);
-                }
-                StateHasChanged();
-            },
-            OnCancel = async (e) =>
-            {
-                if (form.IsModified && (!await Comfirm("内容已经修改过，确定放弃保存吗？")))
-                {
-                    return;
-                }
-                await modalRef.CloseAsync();
-            }
-        });
+    await LoadData();
+}
+else
+{
+    MessageService.Error(result.Message);
+}
+StateHasChanged();
+},
+                OnCancel = async (e) =>
+{
+if (form.IsModified && (!await Comfirm("内容已经修改过，确定放弃保存吗？")))
+{
+    return;
+}
+await modalRef.CloseAsync();
+}
+            });
     }
 
     async Task Delete(WebMenuTree row)
@@ -134,6 +181,65 @@
         {
             MessageService.Error(result.Message);
         }
+    }
+    async Task SetRole(WebMenuTree row)
+    {
+        var data = new MenuRole()
+                {
+                    MenuId = row.Id,
+                    RoleIds = row.RoleIds.ToArray()
+                };
+        ModalRef<bool> modalRef = default;
+        IForm form = default;
+
+        var role_list = await RoleService.GetRoleSelectList();
+        var role_options = role_list.Select(a => new CheckboxOption<string>()
+                {
+                    Label = a.Name,
+                    Value = a.Id
+                }).ToArray();
+
+        modalRef = ModalService.CreateModal<bool>(new()
+                {
+                    Title = "设置权限",
+                    Content = @<Form @ref="form" Model="data" OnFinish="()=> modalRef.OkAsync(true)" LabelColSpan="6" WrapperColSpan="18">
+        <FormItem>
+            <CheckboxGroup @bind-Value="@data.RoleIds" Options="@role_options" TValue="String"></CheckboxGroup>
+        </FormItem>
+    </Form>
+            ,
+            OnOk = async (e) =>
+            {
+                if (!form.Validate())
+                {
+                    return;
+                }
+
+                modalRef.SetConfirmLoading(true);
+
+                var result = await MenuService.SetRoles(data);
+                if (result.Success)
+                {
+                    await modalRef.CloseAsync();
+
+                    MessageService.Success("操作成功");
+
+                    await LoadData();
+                }
+                else
+                {
+                    MessageService.Error(result.Message);
+                }
+            },
+            OnCancel = async (e) =>
+            {
+                if (form.IsModified && (!await Comfirm("内容已经修改过，确定放弃保存吗？")))
+                {
+                    return;
+                }
+                await modalRef.CloseAsync();
+            }
+        });
     }
 
     private async Task<bool> Comfirm(string message)

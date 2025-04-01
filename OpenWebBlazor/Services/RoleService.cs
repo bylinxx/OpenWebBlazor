@@ -72,4 +72,34 @@ public class RoleService
     {
         return await _dbContext.WebRoles.AsNoTracking().ToListAsync();
     }
+    public async Task<BaseResult> CheckAuth(int user_id, string path)
+    {
+        var userData = await _dbContext.WebUsers.FirstOrDefaultAsync(a => a.Id == user_id);
+        if (userData != null && userData.State != 0)
+        {
+            var userRoles = await GetRolesByUserId(userData.Id);
+            if (userRoles.Any(a => a.IsSuper))
+            {
+                return new BaseResult { Success = true };
+            }
+
+            var menu = await _dbContext.WebMenus.FirstOrDefaultAsync(a => a.Path == path);
+            if (menu == null)
+            {
+                return new BaseResult { Success = false, Message = "Path not found" };
+            }
+
+            if (!menu.IsAuth)
+            {
+                return new BaseResult { Success = true };
+            }
+
+            var role_ids = await _dbContext.WebMenuRoles.Where(a => a.MenuId == menu.Id).Select(a => a.RoleId).ToListAsync();
+            if (role_ids.Any(a => userRoles.Any(b => b.Id == a)))
+            {
+                return new BaseResult { Success = true };
+            }
+        }
+        return new BaseResult { Success = false, Message = "No permission" };
+    }
 }

@@ -1,50 +1,66 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Authorization;
+using OpenWebBlazor.Services;
 
 namespace OpenWebBlazor.Components.Auth;
 
 public class WebAuthorizationHandler : AuthorizationHandler<IAuthorizationRequirement>
 {
-    protected override Task HandleRequirementAsync(AuthorizationHandlerContext context, IAuthorizationRequirement requirement)
+    private readonly RoleService _roleService;
+    public WebAuthorizationHandler(RoleService roleService)
+    {
+        _roleService = roleService;
+    }
+
+    protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, IAuthorizationRequirement requirement)
     {
         if (context.User.Identity?.IsAuthenticated != true)
         {
-            return Task.CompletedTask;
+            return;
         }
-
-        if (context.Resource is Microsoft.AspNetCore.Components.RouteData routeData)
+        else
         {
-            var routeAttr = routeData.PageType.CustomAttributes.FirstOrDefault(x => x.AttributeType == typeof(RouteAttribute));
-            if (routeAttr == null)
-            {
-                context.Succeed(requirement);
-            }
-            else
-            {
-                var url = routeAttr.ConstructorArguments[0].Value as string;
-                // if (checkUrl(url))
-                // {
-                //     context.Succeed(requirement);
-                // }
-                // else
-                // {
-                //     context.Fail();
-                // }
-            }
-        }
-        else if (context.Resource is HttpContext httpContext)
-        {
-            var url = httpContext.Request.Path.Value;
-            // if (checkUrl(url))
-            // {
-            //     context.Succeed(requirement);
-            // }
-            // else
-            // {
-            //     context.Fail();
-            // }
-        }
+            var user_id = 0;
+            int.TryParse(context.User.FindFirstValue("UserId"), out user_id);
 
-        return Task.CompletedTask;
+            if (context.Resource is Microsoft.AspNetCore.Components.RouteData routeData)
+            {
+                var routeAttr = routeData.PageType.CustomAttributes.FirstOrDefault(x => x.AttributeType == typeof(RouteAttribute));
+                if (routeAttr == null)
+                {
+                    context.Succeed(requirement);
+                }
+                else
+                {
+                    var url = routeAttr.ConstructorArguments[0].Value as string;
+                    var check_result = await _roleService.CheckAuth(user_id, url);
+                    if (check_result.Success)
+                    {
+                        context.Succeed(requirement);
+                    }
+                    else
+                    {
+                        context.Fail();
+                    }
+                }
+            }
+            else if (context.Resource is HttpContext httpContext)
+            {
+                var url = httpContext.Request.Path.Value;
+                var check_result = await _roleService.CheckAuth(user_id, url);
+                if (check_result.Success)
+                {
+                    context.Succeed(requirement);
+                }
+                else
+                {
+                    context.Fail();
+                }
+            }
+
+            return;
+        }
     }
 }

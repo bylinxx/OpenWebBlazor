@@ -35,7 +35,7 @@
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
         var user_id = 0;
-        int.TryParse(user.FindFirstValue("Id"), out user_id);
+        int.TryParse(user.FindFirstValue("UserId"), out user_id);
         if (user_id != 0)
         {
             webMenuTrees = await MenuService.GetMenuTreeAsync(user_id);
