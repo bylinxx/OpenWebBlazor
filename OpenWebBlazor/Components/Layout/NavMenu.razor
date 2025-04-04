@@ -1,7 +1,9 @@
 ﻿@using System.Security.Claims
+@using Microsoft.Extensions.Caching.Memory
 @using OpenWebBlazor.ViewModels
 @inject OpenWebBlazor.Services.MenuService MenuService
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IMemoryCache Cache
 
 <div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
@@ -10,12 +12,12 @@
 </div>
 <div class="nav-scrollable">
     <Menu Mode="MenuMode.Inline" Accordion="true">
-        @if (webMenuTrees != null)
+        @if (menus != null)
         {
-            @foreach (var item in webMenuTrees)
+            @foreach (var item in menus.Where(a => a.IsShow))
             {
                 <SubMenu Key="@item.Id.ToString()" Title="@item.Name">
-                    @foreach (var child in item.Items)
+                    @foreach (var child in item.Items.Where(a => a.IsShow))
                     {
                         <MenuItem Key="@child.Id.ToString()" RouterLink="@child.Path">
                             @child.Name
@@ -28,17 +30,16 @@
 </div>
 
 @code {
-    private List<WebMenuTree> webMenuTrees { get; set; }
+    private List<WebMenuTree> menus { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
-        var user_id = 0;
-        int.TryParse(user.FindFirstValue("UserId"), out user_id);
-        if (user_id != 0)
+        var user_id = user.FindFirstValue("UserId");
+        if (!String.IsNullOrEmpty(user_id))
         {
-            webMenuTrees = await MenuService.GetMenuTreeAsync(user_id);
+            menus = Cache.Get<List<WebMenuTree>>(user_id);
         }
         await base.OnInitializedAsync();
     }

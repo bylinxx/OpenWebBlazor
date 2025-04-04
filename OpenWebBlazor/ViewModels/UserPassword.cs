@@ -5,7 +5,7 @@ namespace OpenWebBlazor.ViewModels;
 
 public class UserPassword
 {
-    public int UserId { get; set; }
+    public string UserId { get; set; }
     [DisplayName("密码")]
     [Required(ErrorMessage = "密码是必填项")]
     [MinLength(6, ErrorMessage = "密码至少需要6个字符")]

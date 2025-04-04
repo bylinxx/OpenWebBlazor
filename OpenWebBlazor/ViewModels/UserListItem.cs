@@ -5,7 +5,7 @@ namespace OpenWebBlazor.ViewModels;
 public class UserListItem
 {
     [DisplayName("用户标识")]
-    public int Id { get; set; }
+    public string Id { get; set; }
     [DisplayName("用户名")]
     public string Name { get; set; }
     [DisplayName("用户状态")]

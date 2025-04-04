@@ -2,18 +2,33 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.Extensions.Caching.Memory;
 using OpenWebBlazor.Services;
+using OpenWebBlazor.ViewModels;
 
 namespace OpenWebBlazor.Components.Auth;
 
 public class WebAuthorizationHandler : AuthorizationHandler<IAuthorizationRequirement>
 {
-    private readonly RoleService _roleService;
-    public WebAuthorizationHandler(RoleService roleService)
-    {
-        _roleService = roleService;
-    }
+    private readonly IMemoryCache _cache;
 
+    public WebAuthorizationHandler(IMemoryCache cache)
+    {
+        _cache = cache;
+    }
+    private bool CheckPathAuth(string user_id, string path)
+    {
+        var menus = _cache.Get<List<WebMenuTree>>(user_id);
+        if (menus == null || !menus.Any())
+            return false;
+
+        if (menus.Any(a => a.Path == path))
+        {
+            return true;
+        }
+
+        return true;
+    }
     protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, IAuthorizationRequirement requirement)
     {
         if (context.User.Identity?.IsAuthenticated != true)
@@ -22,8 +37,7 @@ public class WebAuthorizationHandler : AuthorizationHandler<IAuthorizationRequir
         }
         else
         {
-            var user_id = 0;
-            int.TryParse(context.User.FindFirstValue("UserId"), out user_id);
+            var user_id = context.User.FindFirstValue("UserId");
 
             if (context.Resource is Microsoft.AspNetCore.Components.RouteData routeData)
             {
@@ -35,8 +49,7 @@ public class WebAuthorizationHandler : AuthorizationHandler<IAuthorizationRequir
                 else
                 {
                     var url = routeAttr.ConstructorArguments[0].Value as string;
-                    var check_result = await _roleService.CheckAuth(user_id, url);
-                    if (check_result.Success)
+                    if (CheckPathAuth(user_id, url))
                     {
                         context.Succeed(requirement);
                     }
@@ -49,8 +62,7 @@ public class WebAuthorizationHandler : AuthorizationHandler<IAuthorizationRequir
             else if (context.Resource is HttpContext httpContext)
             {
                 var url = httpContext.Request.Path.Value;
-                var check_result = await _roleService.CheckAuth(user_id, url);
-                if (check_result.Success)
+                if (CheckPathAuth(user_id, url))
                 {
                     context.Succeed(requirement);
                 }

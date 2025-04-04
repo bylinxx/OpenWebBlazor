@@ -9,9 +9,9 @@ namespace OpenWebBlazor.Models;
 public class WebUsers
 {
     [Key]
-    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    [DatabaseGenerated(DatabaseGeneratedOption.None)]
     [DisplayName("用户标识")]
-    public int Id { get; set; }
+    public string Id { get; set; }
     [DisplayName("用户名")]
     [Required]
     public string? UserName { get; set; }

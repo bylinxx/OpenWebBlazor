@@ -8,15 +8,16 @@ namespace OpenWebBlazor.Services;
 
 public class UserService
 {
-    private readonly WebDbContext _dbContext;
+    private readonly IDbContextFactory<WebDbContext> _dbContextFactory;
 
-    public UserService(WebDbContext dbContext)
+    public UserService(IDbContextFactory<WebDbContext> dbContextFactory)
     {
-        _dbContext = dbContext;
+        _dbContextFactory = dbContextFactory;
     }
 
     public async Task<LoginResult> Login(string username, string password)
     {
+        await using var _dbContext = _dbContextFactory.CreateDbContext();
         var result = new LoginResult();
         var userData = await _dbContext.WebUsers.FirstOrDefaultAsync(a => a.UserName == username && a.State == 1);
         if (userData == null)
@@ -32,8 +33,8 @@ public class UserService
         else
         {
             result.Success = true;
-            result.Name = userData.UserName;
-            result.Id = userData.Id;
+            result.UserName = userData.UserName;
+            result.UserId = userData.Id;
         }
 
         return result;
@@ -41,6 +42,7 @@ public class UserService
 
     public async Task<ListResult<UserListItem>> GetList(QueryModel? query)
     {
+        await using var _dbContext = _dbContextFactory.CreateDbContext();
         var users = await _dbContext.WebUsers.ToListAsync();
         var user_ids = users.Select(a => a.Id).ToList();
         var user_roles = _dbContext.WebUserRoles.Where(a => user_ids.Contains(a.UserId))
@@ -73,6 +75,7 @@ public class UserService
 
     public async Task<BaseResult> Edit(WebUsers model)
     {
+        await using var _dbContext = _dbContextFactory.CreateDbContext();
         try
         {
             var _model = await _dbContext.WebUsers.FirstOrDefaultAsync(a => a.Id == model.Id);
@@ -100,8 +103,9 @@ public class UserService
         return new BaseResult() { Success = true };
     }
 
-    public async Task<BaseResult> Delete(int id)
+    public async Task<BaseResult> Delete(string id)
     {
+        await using var _dbContext = _dbContextFactory.CreateDbContext();
         var data = await _dbContext.WebUsers.FirstOrDefaultAsync(a => a.Id == id);
         if (data == null)
         {
@@ -121,6 +125,7 @@ public class UserService
 
     public async Task<BaseResult> SetPassword(UserPassword model)
     {
+        await using var _dbContext = _dbContextFactory.CreateDbContext();
         var data = await _dbContext.WebUsers.FirstOrDefaultAsync(a => a.Id == model.UserId);
         if (data == null)
         {
@@ -135,6 +140,7 @@ public class UserService
     }
     public async Task<BaseResult> SetRoles(UserRole model)
     {
+        await using var _dbContext = _dbContextFactory.CreateDbContext();
         var user = await _dbContext.WebUsers.FirstOrDefaultAsync(a => a.Id == model.UserId);
         if (user == null)
         {

@@ -81,7 +81,7 @@
         IForm form = default;
         modalRef = ModalService.CreateModal<bool>(new()
                 {
-                    Title = data.Id > 0 ? "编辑" : "新建",
+                    Title = !String.IsNullOrEmpty(data.Id) ? "编辑" : "新建",
                     Content = @<Form @ref="form" Model="data" OnFinish="()=> modalRef.OkAsync(true)" LabelColSpan="6" WrapperColSpan="18">
         <FormItem>
             <Input @bind-Value="@data.UserName"></Input>
@@ -93,7 +93,7 @@
             </RadioGroup>
         </FormItem>
     </Form>
-                                                                                                                        ,
+                                                                                                                            ,
                 OnOk = async (e) =>
 {
 if (!form.Validate())
@@ -165,7 +165,7 @@ await modalRef.CloseAsync();
             <Input Type="InputType.Password" @bind-Value="@data.ConfirmPassword"></Input>
         </FormItem>
     </Form>
-                                                                ,
+                                                                    ,
                 OnOk = async (e) =>
 {
 if (!form.Validate())

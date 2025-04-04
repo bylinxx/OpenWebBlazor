@@ -7,11 +7,11 @@ namespace OpenWebBlazor.Models;
 public class WebMenus
 {
     [Key]
-    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-    public int Id { get; set; }
+    [DatabaseGenerated(DatabaseGeneratedOption.None)]
+    public string Id { get; set; }
     [DisplayName("上级菜单Id")]
     [Required]
-    public int ParentId { get; set; }
+    public string ParentId { get; set; }
     [Required]
     [DisplayName("菜单名称")]
     public string Name { get; set; }

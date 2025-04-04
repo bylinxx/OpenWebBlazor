@@ -32,7 +32,7 @@
             }
         </PropertyColumn>
         <PropertyColumn Property="c=>c.IsAuth">
-            @if (context.ParentId != 0)
+            @if (!String.IsNullOrEmpty(context.ParentId))
             {
                 @if (context.IsAuth)
                 {
@@ -46,13 +46,13 @@
         </PropertyColumn>
         <PropertyColumn Property="c=>c.Sort" Width="10%" />
         <ActionColumn Title="操作">
-            @if (context.ParentId != 0)
+            @if (!String.IsNullOrEmpty(context.ParentId))
             {
                 <Button @onclick="() => SetRole(context)">设置权限</Button>
             }
             else
             {
-                <Button @onclick="() => Edit(new WebMenuTree(){ Id = 0,ParentId = context.Id,IsShow = true,IsAuth = true })">新建菜单</Button>
+                <Button @onclick="() => Edit(new WebMenuTree(){ Id = String.Empty,ParentId = context.Id,IsShow = true,IsAuth = true })">新建菜单</Button>
             }
             <Button @onclick="() => Edit(context)">编辑</Button>
             <Button Danger @onclick="() => Delete(context)">删除</Button>
@@ -103,7 +103,7 @@
 
         modalRef = ModalService.CreateModal<bool>(new()
                 {
-                    Title = data.Id > 0 ? "编辑" : "新建",
+                    Title = !String.IsNullOrEmpty(data.Id) ? "编辑" : "新建",
                     Content = @<Form @ref="form" Model="data" OnFinish="()=> modalRef.OkAsync(true)" LabelColSpan="6" WrapperColSpan="18">
         <FormItem Label="上级菜单">
             <Select DataSource="@_selectMenus" @bind-Value="@data.ParentId" ValueName="@nameof(WebMenus.Id)" LabelName="@nameof(WebMenus.Name)"></Select>
@@ -130,7 +130,7 @@
             <Input @bind-Value="@data.Sort" Type="InputType.Number"></Input>
         </FormItem>
     </Form>
-                                                                        ,
+                                                                                        ,
                 OnOk = async (e) =>
 {
 if (!form.Validate())

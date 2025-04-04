@@ -11,8 +11,8 @@ using OpenWebBlazor.Models;
 namespace OpenWebBlazor.Migrations
 {
     [DbContext(typeof(WebDbContext))]
-    [Migration("20250323125955_InitialCreate_230323_2")]
-    partial class InitialCreate_230323_2
+    [Migration("20250404030032_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -24,7 +24,7 @@ namespace OpenWebBlazor.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("OpenWebBlazor.Models.WebMenus", b =>
+            modelBuilder.Entity("OpenWebBlazor.Models.WebMenuRoles", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -32,12 +32,37 @@ namespace OpenWebBlazor.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("MenuId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RoleId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("WebMenuRoles");
+                });
+
+            modelBuilder.Entity("OpenWebBlazor.Models.WebMenus", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<bool>("IsAuth")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsShow")
+                        .HasColumnType("bit");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("ParentId")
-                        .HasColumnType("int");
+                    b.Property<string>("ParentId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Path")
                         .IsRequired()
@@ -49,26 +74,6 @@ namespace OpenWebBlazor.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("WebMenus");
-                });
-
-            modelBuilder.Entity("OpenWebBlazor.Models.WebRoleMenus", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("MenuId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("RoleId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("WebRoleMenus");
                 });
 
             modelBuilder.Entity("OpenWebBlazor.Models.WebRoles", b =>
@@ -100,8 +105,9 @@ namespace OpenWebBlazor.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
@@ -110,14 +116,8 @@ namespace OpenWebBlazor.Migrations
 
             modelBuilder.Entity("OpenWebBlazor.Models.WebUsers", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("Password")
                         .HasColumnType("nvarchar(max)");
@@ -125,7 +125,14 @@ namespace OpenWebBlazor.Migrations
                     b.Property<int>("State")
                         .HasColumnType("int");
 
+                    b.Property<string>("UserName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("UserName")
+                        .IsUnique();
 
                     b.ToTable("WebUsers");
                 });

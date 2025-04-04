@@ -9,8 +9,12 @@ using OpenWebBlazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
+
 // 数据库连接等敏感配置
-builder.Configuration.AddJsonFile("Secrets/appsettings.json");
+builder.Configuration.AddJsonFile("Secrets/appsettings.json", true, true);
+
+builder.Services.AddMemoryCache();
 
 builder.Services.AddHttpContextAccessor();
 
@@ -30,12 +34,17 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddAuthorizationCore();
 builder.Services.AddScoped<IAuthorizationHandler, WebAuthorizationHandler>();
 
-builder.Services.AddDbContext<WebDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")), ServiceLifetime.Transient);
+builder.Services.AddDbContextFactory<WebDbContext>((services, options) =>
+{
+    var config = services.GetRequiredService<IConfiguration>();
+    var connectionString = config.GetConnectionString("DefaultConnection");
+    options.UseSqlServer(connectionString);
+});
 
-builder.Services.AddTransient<UserService>();
-builder.Services.AddTransient<RoleService>();
-builder.Services.AddTransient<MenuService>();
+builder.Services.AddScoped<InitialService>();
+builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<RoleService>();
+builder.Services.AddScoped<MenuService>();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()

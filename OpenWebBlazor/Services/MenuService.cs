@@ -10,17 +10,18 @@ namespace OpenWebBlazor.Services
 {
     public class MenuService
     {
-        private readonly WebDbContext _dbContext;
+        private readonly IDbContextFactory<WebDbContext> _dbContextFactory;
         private readonly RoleService _roleService;
 
-        public MenuService(WebDbContext dbContext, RoleService roleService)
+        public MenuService(IDbContextFactory<WebDbContext> dbContextFactory, RoleService roleService)
         {
-            _dbContext = dbContext;
+            _dbContextFactory = dbContextFactory;
             _roleService = roleService;
         }
 
         public async Task<BaseResult> EditMenu(WebMenus menu)
         {
+            await using var _dbContext = _dbContextFactory.CreateDbContext();
             try
             {
                 var data = await _dbContext.WebMenus.FirstOrDefaultAsync(a => a.Id == menu.Id);
@@ -47,8 +48,9 @@ namespace OpenWebBlazor.Services
             return new BaseResult { Success = true };
         }
         // 删除菜单
-        public async Task<BaseResult> DeleteMenu(int id)
+        public async Task<BaseResult> DeleteMenu(string id)
         {
+            await using var _dbContext = _dbContextFactory.CreateDbContext();
             var data = await _dbContext.WebMenus.FirstOrDefaultAsync(a => a.Id == id);
             if (data == null)
             {
@@ -67,10 +69,11 @@ namespace OpenWebBlazor.Services
         }
 
         // 菜单列表
-        public ListResult<WebMenus> GetList(QueryModel<WebMenus> query)
+        public async Task<ListResult<WebMenus>> GetList(QueryModel<WebMenus> query)
         {
-            var total = _dbContext.WebMenus.ExecuteTableQuery<WebMenus>(query).Count();
-            var data = _dbContext.WebMenus.ExecuteTableQuery(query).CurrentPagedRecords(query).ToList();
+            await using var _dbContext = _dbContextFactory.CreateDbContext();
+            var total = await _dbContext.WebMenus.ExecuteTableQuery<WebMenus>(query).CountAsync();
+            var data = await _dbContext.WebMenus.ExecuteTableQuery(query).CurrentPagedRecords(query).ToListAsync();
             return new ListResult<WebMenus>()
             {
                 Data = data,
@@ -79,8 +82,9 @@ namespace OpenWebBlazor.Services
         }
 
         // 菜单列表
-        public async Task<List<WebMenuTree>> GetMenuTreeAsync(int user_id)
+        public async Task<List<WebMenuTree>> GetMenuTreeAsync(string user_id)
         {
+            await using var _dbContext = _dbContextFactory.CreateDbContext();
             var userData = await _dbContext.WebUsers.FirstOrDefaultAsync(a => a.Id == user_id);
             if (userData != null && userData.State != 0)
             {
@@ -88,39 +92,47 @@ namespace OpenWebBlazor.Services
                 if (userRoles.Any(a => a.IsSuper))
                 {
                     var menus = await _dbContext.WebMenus.ToListAsync();
-                    return menus.Where(a => a.ParentId == 0).Select(a => new WebMenuTree()
+                    return menus.Where(a => String.IsNullOrEmpty(a.ParentId)).Select(a => new WebMenuTree()
                     {
                         ParentId = a.ParentId,
                         Id = a.Id,
                         Name = a.Name,
                         Path = a.Path,
                         Sort = a.Sort,
+                        IsAuth = a.IsAuth,
+                        IsShow = a.IsShow,
                         Items = menus.Where(b => b.ParentId == a.Id).Select(b => new WebMenuTree()
                         {
                             Id = b.Id,
                             Name = b.Name,
                             Path = b.Path,
-                            Sort = b.Sort
+                            Sort = b.Sort,
+                            IsAuth = b.IsAuth,
+                            IsShow = b.IsShow
                         }).OrderBy(b => b.Sort).ToList()
                     }).OrderBy(a => a.Sort).ToList();
                 }
                 else
                 {
-                    var menus = await _dbContext.WebMenus.Where(a => a.IsShow).ToListAsync();
+                    var menus = await _dbContext.WebMenus.ToListAsync();
                     var userMenuIds = await _dbContext.WebMenuRoles.Where(a => userRoles.Select(b => b.Id).Contains(a.RoleId)).Select(a => a.MenuId).ToListAsync();
-                    return menus.Where(a => a.ParentId == 0).Select(a => new WebMenuTree()
+                    return menus.Where(a => String.IsNullOrEmpty(a.ParentId)).Select(a => new WebMenuTree()
                     {
                         ParentId = a.ParentId,
                         Id = a.Id,
                         Name = a.Name,
                         Path = a.Path,
                         Sort = a.Sort,
-                        Items = menus.Where(b => b.ParentId == a.Id && userMenuIds.Contains(b.Id)).Select(b => new WebMenuTree()
+                        IsAuth = a.IsAuth,
+                        IsShow = a.IsShow,
+                        Items = menus.Where(b => b.ParentId == a.Id && (b.IsAuth == false || userMenuIds.Contains(b.Id))).Select(b => new WebMenuTree()
                         {
                             Id = b.Id,
                             Name = b.Name,
                             Path = b.Path,
-                            Sort = b.Sort
+                            Sort = b.Sort,
+                            IsAuth = b.IsAuth,
+                            IsShow = b.IsShow
                         }).OrderBy(b => b.Sort).ToList()
                     }).Where(a => a.Items.Any()).OrderBy(a => a.Sort).ToList();
                 }
@@ -132,10 +144,11 @@ namespace OpenWebBlazor.Services
         }
         public async Task<List<WebMenuTree>> GetMenuTreeAsync()
         {
+            await using var _dbContext = _dbContextFactory.CreateDbContext();
             var menus = await _dbContext.WebMenus.ToListAsync();
             var menu_ids = menus.Select(a => a.Id).ToList();
             var menu_roles = await _dbContext.WebMenuRoles.Where(a => menu_ids.Contains(a.MenuId)).ToListAsync();
-            return menus.Where(a => a.ParentId == 0).Select(a => new WebMenuTree()
+            return menus.Where(a => String.IsNullOrEmpty(a.ParentId)).Select(a => new WebMenuTree()
             {
                 ParentId = a.ParentId,
                 Id = a.Id,
@@ -163,16 +176,18 @@ namespace OpenWebBlazor.Services
         /// <returns></returns>
         public async Task<List<WebMenus>> GetMenuSelectListAsync()
         {
+            await using var _dbContext = _dbContextFactory.CreateDbContext();
             var list = new List<WebMenus>()
             {
-                new WebMenus(){ Id = 0, Name = "根菜单"}
+                new WebMenus(){ Id = String.Empty, Name = "根菜单"}
             };
-            var data = await _dbContext.WebMenus.Where(a => a.ParentId == 0).AsNoTracking().ToListAsync();
+            var data = await _dbContext.WebMenus.Where(a => String.IsNullOrEmpty(a.ParentId)).AsNoTracking().ToListAsync();
             list.AddRange(data);
             return list;
         }
         public async Task<BaseResult> SetRoles(MenuRole model)
         {
+            await using var _dbContext = _dbContextFactory.CreateDbContext();
             var menu_data = await _dbContext.WebMenus.FirstOrDefaultAsync(a => a.Id == model.MenuId);
             if (menu_data == null)
             {
