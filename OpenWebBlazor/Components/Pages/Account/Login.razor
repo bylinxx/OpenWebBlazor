@@ -15,24 +15,22 @@
 @inject IMessageService MessageService
 @inject IMemoryCache Cache
 
-<PageTitle>欢迎登录OpenWeb</PageTitle>
+<PageTitle>欢迎登录</PageTitle>
 
 <div class="root">
     <GridRow>
         <GridCol Span="9"></GridCol>
         <GridCol Span="6">
             <div class="login-box">
-                <div style="width: 100%;text-align: center">
-                    <h5 class="title">欢迎登录</h5>
-                </div>
+                <h3 class="title">登录</h3>
                 <Form Name="login" Model="_loginModel" OnFinish="OnLogin" Method="HttpMethod.Post">
                     <FormItem Label="账户">
-                        <Input @bind-Value="_loginModel.UserName"></Input>
+                        <Input @bind-Value="_loginModel.UserName" />
                     </FormItem>
                     <FormItem Label="密码">
                         <InputPassword @bind-Value="_loginModel.Password"></InputPassword>
                     </FormItem>
-                    <FormItem>
+                    <FormItem style="text-align:right">
                         <Button Type="ButtonType.Primary" HtmlType="submit">登录</Button>
                     </FormItem>
                 </Form>
