@@ -1,0 +1,92 @@
+@page "/Account/Login"
+@layout EmptyLayout
+@attribute [AllowAnonymous]
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Authentication.Cookies
+@using Microsoft.Extensions.Caching.Memory
+@using OpenWebBlazor.Components.Layout
+@using OpenWebBlazor.Components.Auth
+@using OpenWebBlazor.Services
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserService UserService
+@inject OpenWebBlazor.Services.MenuService MenuService
+@inject IMessageService MessageService
+@inject IMemoryCache Cache
+
+<PageTitle>欢迎登录</PageTitle>
+
+<div class="root">
+    <GridRow>
+        <GridCol Span="9"></GridCol>
+        <GridCol Span="6">
+            <div class="login-box">
+                <h3 class="title">登录</h3>
+                <Form Name="login" Model="_loginModel" OnFinish="OnLogin" Method="HttpMethod.Post">
+                    <FormItem Label="账户">
+                        <Input @bind-Value="_loginModel.UserName" />
+                    </FormItem>
+                    <FormItem Label="密码">
+                        <InputPassword @bind-Value="_loginModel.Password"></InputPassword>
+                    </FormItem>
+                    <FormItem style="text-align:right">
+                        <Button Type="ButtonType.Primary" HtmlType="submit">登录</Button>
+                    </FormItem>
+                </Form>
+            </div>
+        </GridCol>
+        <GridCol Span="9"></GridCol>
+    </GridRow>
+</div>
+
+@code {
+
+    class LoginModel
+    {
+        public string UserName { get; set; }
+        public string Password { get; set; }
+    }
+
+    [SupplyParameterFromForm] LoginModel _loginModel { get; set; } = new LoginModel();
+    [CascadingParameter] HttpContext _httpContext { get; set; } = default!;
+
+    private string returnUrl = "/"; // 默认跳转首页
+
+    protected override void OnInitialized()
+    {
+        var uri = new Uri(NavigationManager.Uri);
+        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+        returnUrl = query["returnUrl"] ?? "/";
+    }
+
+    private async Task OnLogin()
+    {
+        var loginResult = await UserService.Login(_loginModel.UserName, _loginModel.Password);
+        if (loginResult.Success)
+        {
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Name, loginResult.UserName),
+                new Claim("UserId",loginResult.UserId.ToString())
+            };
+            var claimsIdentity = new ClaimsIdentity(claims, "WebAuth");
+            var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
+            var authProperties = new AuthenticationProperties
+                {
+                    IsPersistent = false
+                };
+            await _httpContext.SignInAsync("WebAuth", claimsPrincipal, authProperties);
+
+            var menus = await MenuService.GetMenuTreeAsync(loginResult.UserId);
+            Cache.Set(loginResult.UserId, menus);
+
+            NavigationManager.NavigateTo(returnUrl, forceLoad: true);
+        }
+        else
+        {
+            MessageService.Error(loginResult.Message);
+        }
+    }
+
+}

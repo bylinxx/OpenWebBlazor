@@ -1,0 +1,24 @@
+@page "/Account/Logout"
+@attribute [AllowAnonymous]
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.Extensions.Caching.Memory
+@using OpenWebBlazor.Components.Auth
+@using System.Security.Claims
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IMemoryCache Cache
+
+@code {
+    [CascadingParameter] HttpContext _httpContext { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user_id = _httpContext.User.FindFirstValue("UserId");
+        if (!String.IsNullOrEmpty(user_id))
+        {
+            Cache.Remove(user_id);
+            await _httpContext.SignOutAsync();
+        }
+        NavigationManager.NavigateTo("/");
+    }
+}

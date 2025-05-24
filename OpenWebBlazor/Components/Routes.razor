@@ -1,0 +1,49 @@
+﻿@using OpenWebBlazor.Components.Pages.Shared
+@using OpenWebBlazor.Services
+<CascadingAuthenticationState>
+    <Router AppAssembly="typeof(Program).Assembly" OnNavigateAsync="@OnNavigateAsync">
+        <Found Context="routeData">
+            <AuthorizeRouteView Resource="routeData" RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
+                <NotAuthorized>
+                    @if (context.User.Identity.IsAuthenticated == false)
+                    {
+                        <RedirectToLogin />
+                    }
+                    else
+                    {
+                        <RedirectToAuth></RedirectToAuth>
+                    }
+                </NotAuthorized>
+                <Authorizing>
+                    <div style="position: fixed;left:50%;top:40%;">
+                        <Spin Size="SpinSize.Large" Indicator="@antIcon" />
+                    </div>
+                </Authorizing>
+            </AuthorizeRouteView>
+            <FocusOnNavigate RouteData="routeData" Selector="h1" />
+        </Found>
+        <NotFound>
+            <LayoutView Layout="@typeof(Layout.MainLayout)">
+                <OpenWebBlazor.Components.Pages.NotFound />
+            </LayoutView>
+        </NotFound>
+    </Router>
+
+    <AntContainer></AntContainer>
+</CascadingAuthenticationState>
+
+@code {
+    RenderFragment antIcon = @<Icon Type="@IconType.Outline.Loading" Style="font-size: 48px" Spin />;
+
+    [Inject] private InitialService initialService { get; set; } = default!;
+    [Inject] private NavigationManager navigationManager { get; set; }
+
+    private async Task OnNavigateAsync(NavigationContext context)
+    {
+        var is_initialed = await initialService.IsInitialedAsync();
+        if (!is_initialed && !context.Path.ToLower().Contains("initialize"))
+        {
+            navigationManager.NavigateTo("/initialize");
+        }
+    }
+}

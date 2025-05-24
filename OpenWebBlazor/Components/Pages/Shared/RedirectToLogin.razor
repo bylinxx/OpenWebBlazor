@@ -1,0 +1,13 @@
+@inject NavigationManager NavigationManager
+
+@code {
+    [CascadingParameter] HttpContext _httpContext { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        var returnUrl = Uri.EscapeDataString(NavigationManager.Uri);
+        NavigationManager.NavigateTo($"/Account/Login?returnUrl={returnUrl}", forceLoad: true);
+    }
+
+}

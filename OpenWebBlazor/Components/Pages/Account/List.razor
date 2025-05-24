@@ -1,0 +1,264 @@
+﻿@page "/Account/List"
+@using AntDesign.TableModels
+@using OpenWebBlazor.Models
+@using OpenWebBlazor.ViewModels
+
+<PageTitle>用户管理-用户列表</PageTitle>
+<PageHeader Title="用户管理" Subtitle="用户列表" Style="padding:0 24px 24px 0;"></PageHeader>
+
+<Content Style=" padding: 0 24px 24px 0px;">
+    <Row>
+        <GridCol Span="24">
+            <Button Type="ButtonType.Primary" @onclick="()=> Edit(null)">新建</Button>
+        </GridCol>
+    </Row>
+</Content>
+
+<Table @ref="_table" DataSource="_dataSource" TItem="UserListItem" @bind-SelectedRows="_selectedRows" Total="@_total" OnChange="OnChange">
+    <ColumnDefinitions Context="row">
+        <PropertyColumn Property="c=>c.Id">
+            <span>@row.Id</span>
+        </PropertyColumn>
+        <PropertyColumn Property="c=>c.Name">
+            <span>@row.Name</span>
+        </PropertyColumn>
+        <PropertyColumn Property="c=>c.Roles">
+            <span>@String.Join("、", row.Roles.Select(c => c.Name))</span>
+        </PropertyColumn>
+        <PropertyColumn Property="c=>c.State">
+            @if (row.State == 1)
+            {
+                <span>启用</span>
+            }
+            else
+            {
+                <span>禁用</span>
+            }
+        </PropertyColumn>
+        <ActionColumn Title="操作">
+            <Button @onclick="() => SetPassword(row)">重设密码</Button>
+            <Button @onclick="() => SetRole(row)">设置角色</Button>
+            <Button @onclick="() => Edit(row)">编辑</Button>
+            <Button Danger @onclick="() => Delete(row)">删除</Button>
+        </ActionColumn>
+    </ColumnDefinitions>
+</Table>
+
+@inject MessageService MessageService;
+@inject ModalService ModalService;
+@inject ConfirmService ComfirmService;
+@inject OpenWebBlazor.Services.UserService UserService;
+@inject OpenWebBlazor.Services.RoleService RoleService;
+
+@code {
+    IEnumerable<UserListItem> _selectedRows = [];
+    List<UserListItem> _dataSource;
+    ITable _table;
+    int _total;
+
+    async void OnChange(QueryModel<UserListItem> query)
+    {
+        await LoadData(query);
+    }
+
+    async Task LoadData(QueryModel<UserListItem> query)
+    {
+        var data = await UserService.GetList(query);
+        _dataSource = data.Data;
+        _total = data.Total;
+        StateHasChanged();
+    }
+
+    void Edit(UserListItem row)
+    {
+        var data = row == null ? new WebUsers() : new WebUsers()
+                {
+                    Id = row.Id,
+                    UserName = row.Name,
+                    State = row.State,
+                };
+        ModalRef<bool> modalRef = default;
+        IForm form = default;
+        modalRef = ModalService.CreateModal<bool>(new()
+                {
+                    Title = !String.IsNullOrEmpty(data.Id) ? "编辑" : "新建",
+                    Content = @<Form @ref="form" Model="data" OnFinish="()=> modalRef.OkAsync(true)" LabelColSpan="6" WrapperColSpan="18">
+        <FormItem>
+            <Input @bind-Value="@data.UserName"></Input>
+        </FormItem>
+        <FormItem>
+            <RadioGroup @bind-Value="@data.State">
+                <Radio Value="1">启用</Radio>
+                <Radio Value="0">禁用</Radio>
+            </RadioGroup>
+        </FormItem>
+    </Form>
+                                                                                                                            ,
+                OnOk = async (e) =>
+{
+if (!form.Validate())
+{
+    return;
+}
+
+modalRef.SetConfirmLoading(true);
+
+var result = await UserService.Edit(data);
+if (result.Success)
+{
+    await modalRef.CloseAsync();
+
+    MessageService.Success("操作成功");
+
+    _table.ReloadData();
+}
+else
+{
+    MessageService.Error(result.Message);
+}
+StateHasChanged();
+},
+                OnCancel = async (e) =>
+{
+if (form.IsModified && (!await Comfirm("内容已经修改过，确定放弃保存吗？")))
+{
+    return;
+}
+await modalRef.CloseAsync();
+}
+            });
+    }
+
+    async Task Delete(UserListItem row)
+    {
+        if (!await Comfirm($"确定删除【{row.Name}】吗？"))
+            return;
+
+        var result = await UserService.Delete(row.Id);
+        if (result.Success)
+        {
+            MessageService.Success("操作成功");
+            _table.ReloadData();
+        }
+        else
+        {
+            MessageService.Error(result.Message);
+        }
+    }
+
+    async Task SetPassword(UserListItem row)
+    {
+        var data = new UserPassword()
+                {
+                    UserId = row.Id
+                };
+        ModalRef<bool> modalRef = default;
+        IForm form = default;
+        modalRef = ModalService.CreateModal<bool>(new()
+                {
+                    Title = "设置密码",
+                    Content = @<Form @ref="form" Model="data" OnFinish="()=> modalRef.OkAsync(true)" LabelColSpan="6" WrapperColSpan="18">
+        <FormItem>
+            <Input Type="InputType.Password" @bind-Value="@data.Password"></Input>
+        </FormItem>
+        <FormItem>
+            <Input Type="InputType.Password" @bind-Value="@data.ConfirmPassword"></Input>
+        </FormItem>
+    </Form>
+                                                                    ,
+                OnOk = async (e) =>
+{
+if (!form.Validate())
+{
+    return;
+}
+
+modalRef.SetConfirmLoading(true);
+
+var result = await UserService.SetPassword(data);
+if (result.Success)
+{
+    await modalRef.CloseAsync();
+
+    MessageService.Success("操作成功");
+}
+else
+{
+    MessageService.Error(result.Message);
+}
+StateHasChanged();
+},
+                OnCancel = async (e) =>
+{
+if (form.IsModified && (!await Comfirm("内容已经修改过，确定放弃保存吗？")))
+{
+    return;
+}
+await modalRef.CloseAsync();
+}
+            });
+    }
+    async Task SetRole(UserListItem row)
+    {
+        var data = new UserRole()
+                {
+                    UserId = row.Id,
+                    RoleIds = row.Roles.Select(a => a.Id).ToArray()
+                };
+        ModalRef<bool> modalRef = default;
+        IForm form = default;
+
+        var role_list = await RoleService.GetRoleSelectList();
+        var role_options = role_list.Select(a => new CheckboxOption<string>()
+                {
+                    Label = a.Name,
+                    Value = a.Id
+                }).ToArray();
+
+        modalRef = ModalService.CreateModal<bool>(new()
+                {
+                    Title = "设置角色",
+                    Content = @<Form @ref="form" Model="data" OnFinish="()=> modalRef.OkAsync(true)" LabelColSpan="6" WrapperColSpan="18">
+        <FormItem>
+            <CheckboxGroup @bind-Value="@data.RoleIds" Options="@role_options" TValue="String"></CheckboxGroup>
+        </FormItem>
+    </Form>
+            ,
+            OnOk = async (e) =>
+            {
+                if (!form.Validate())
+                {
+                    return;
+                }
+
+                modalRef.SetConfirmLoading(true);
+
+                var result = await UserService.SetRoles(data);
+                if (result.Success)
+                {
+                    await modalRef.CloseAsync();
+
+                    MessageService.Success("操作成功");
+                    _table.ReloadData();
+                }
+                else
+                {
+                    MessageService.Error(result.Message);
+                }
+            },
+            OnCancel = async (e) =>
+            {
+                if (form.IsModified && (!await Comfirm("内容已经修改过，确定放弃保存吗？")))
+                {
+                    return;
+                }
+                await modalRef.CloseAsync();
+            }
+        });
+    }
+
+    private async Task<bool> Comfirm(string message)
+    {
+        return await ComfirmService.Show(message, "确认操作", ConfirmButtons.YesNo, ConfirmIcon.Warning) == ConfirmResult.Yes;
+    }
+}

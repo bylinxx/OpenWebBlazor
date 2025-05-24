@@ -1,0 +1,140 @@
+﻿@page "/Role/List"
+
+@using AntDesign.TableModels
+@using OpenWebBlazor.Models
+@using OpenWebBlazor.ViewModels
+
+<PageTitle>角色列表</PageTitle>
+<PageHeader Title="角色管理" Subtitle="角色列表" Style="padding:0 24px 24px 0;"></PageHeader>
+
+<Content Style=" padding: 0 24px 24px 0px;">
+    <Row>
+        <GridCol Span="24">
+            <Button Type="ButtonType.Primary" @onclick="()=> Edit(null)">新建</Button>
+        </GridCol>
+    </Row>
+</Content>
+
+<Table @ref="_table" DataSource="_dataSource" TItem="WebRoles" @bind-SelectedRows="_selectedRows" Total="@_total" OnChange="OnChange">
+    <ColumnDefinitions Context="row">
+        <PropertyColumn Property="c=>c.Name">
+            <span>@row.Name</span>
+        </PropertyColumn>
+        <PropertyColumn Property="c=>c.IsSuper">
+            @if (row.IsSuper)
+            {
+                <span>是</span>
+            }
+            else
+            {
+                <span>否</span>
+            }
+        </PropertyColumn>
+        <ActionColumn Title="操作">
+            <Button @onclick="() => Edit(row)">编辑</Button>
+            <Button Danger @onclick="() => Delete(row)">删除</Button>
+        </ActionColumn>
+    </ColumnDefinitions>
+</Table>
+
+@inject MessageService MessageService;
+@inject ModalService ModalService;
+@inject ConfirmService ComfirmService;
+@inject OpenWebBlazor.Services.RoleService RoleService;
+
+@code {
+    IEnumerable<WebRoles> _selectedRows = [];
+    List<WebRoles> _dataSource;
+    ITable _table;
+    int _total;
+
+    async void OnChange(QueryModel<WebRoles> query)
+    {
+        await LoadData(query);
+    }
+
+    async Task LoadData(QueryModel<WebRoles> query)
+    {
+        var data = await RoleService.GetList(query);
+        _dataSource = data.Data;
+        _total = data.Total;
+        StateHasChanged();
+    }
+
+    void Edit(WebRoles row)
+    {
+        var data = row == null ? new WebRoles() : row;
+        ModalRef<bool> modalRef = default;
+        IForm form = default;
+        modalRef = ModalService.CreateModal<bool>(new()
+                {
+                    Title = !String.IsNullOrEmpty(data.Id) ? "编辑" : "新建",
+                    Content = @<Form @ref="form" Model="data" OnFinish="()=> modalRef.OkAsync(true)" LabelColSpan="6" WrapperColSpan="18">
+        <FormItem>
+            <Input @bind-Value="@data.Name"></Input>
+        </FormItem>
+        <FormItem>
+            <RadioGroup @bind-Value="@data.IsSuper">
+                <Radio Value="true">是</Radio>
+                <Radio Value="false">否</Radio>
+            </RadioGroup>
+        </FormItem>
+    </Form>
+        ,
+            OnOk = async (e) =>
+            {
+                if (!form.Validate())
+                {
+                    return;
+                }
+
+                modalRef.SetConfirmLoading(true);
+
+                var result = await RoleService.Edit(data);
+                if (result.Success)
+                {
+                    await modalRef.CloseAsync();
+
+                    MessageService.Success("操作成功");
+
+                    _table.ReloadData();
+                }
+                else
+                {
+                    MessageService.Error(result.Message);
+                }
+                StateHasChanged();
+            },
+            OnCancel = async (e) =>
+            {
+                if (form.IsModified && (!await Comfirm("内容已经修改过，确定放弃保存吗？")))
+                {
+                    return;
+                }
+                await modalRef.CloseAsync();
+            }
+        });
+    }
+
+    async Task Delete(WebRoles row)
+    {
+        if (!await Comfirm($"确定删除【{row.Name}】吗？"))
+            return;
+
+        var result = await RoleService.Delete(row.Id);
+        if (result.Success)
+        {
+            MessageService.Success("操作成功");
+            _table.ReloadData();
+        }
+        else
+        {
+            MessageService.Error(result.Message);
+        }
+    }
+
+    private async Task<bool> Comfirm(string message)
+    {
+        return await ComfirmService.Show(message, "确认操作", ConfirmButtons.YesNo, ConfirmIcon.Warning) == ConfirmResult.Yes;
+    }
+}

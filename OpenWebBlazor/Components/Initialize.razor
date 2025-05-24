@@ -1,0 +1,102 @@
+﻿@page "/Initialize"
+@using OpenWebBlazor.Components.Layout
+@using System.ComponentModel
+@using System.ComponentModel.DataAnnotations
+@using OpenWebBlazor.Services
+@using OpenWebBlazor.ViewModels
+@layout EmptyLayout
+@attribute [AllowAnonymous]
+
+<PageTitle>配置数据库</PageTitle>
+
+@if (init_result == null)
+{
+    <div class="root">
+        <GridRow>
+            <GridCol Span="9"></GridCol>
+            <GridCol Span="6">
+                <div class="box">
+                    <div class="title">配置数据库</div>
+                    <Form @ref="form" Model="db_config">
+                        <FormItem>
+                            <Input @bind-Value="@db_config.Server"></Input>
+                        </FormItem>
+                        <FormItem>
+                            <Input @bind-Value="@db_config.Database"></Input>
+                        </FormItem>
+                        <FormItem>
+                            <Input @bind-Value="@db_config.UserId"></Input>
+                        </FormItem>
+                        <FormItem>
+                            <Input @bind-Value="@db_config.Password" Type="InputType.Password"></Input>
+                        </FormItem>
+                        <FormItem>
+                            <Button Type="ButtonType.Primary" Block AutoLoading @onclick="@OnSave">保存</Button>
+                        </FormItem>
+                    </Form>
+                </div>
+            </GridCol>
+            <GridCol Span="9"></GridCol>
+        </GridRow>
+    </div>
+}
+else
+{
+    @if (init_result == true)
+    {
+        <Result Status="ResultStatus.Success"
+        Title="配置完成!"
+        SubTitle="配置已经完成，请进入管理后台完成最后的设置。">
+            <Extra>
+                <Button @onclick="@GoHome" Type="ButtonType.Primary">进入管理后台</Button>
+            </Extra>
+
+        </Result>
+    }
+    else
+    {
+        <Result Status="ResultStatus.Error"
+        Title="配置失败!"
+        SubTitle="@init_error">
+            <Extra>
+                <Button @onclick="@Reset" Type="ButtonType.Primary">重新配置</Button>
+            </Extra>
+        </Result>
+    }
+}
+
+
+
+@code {
+    IForm form;
+    private DatabaseConfig db_config = new DatabaseConfig();
+    private bool? init_result = null;
+    private string init_error = String.Empty;
+
+    [Inject] InitialService initialService { get; set; }
+    [Inject] NavigationManager navigationManager { get; set; }
+
+    private async Task OnSave()
+    {
+        if (!form.Validate()) return;
+        try
+        {
+            await initialService.InitializeAsync(db_config);
+            init_result = true;
+        }
+        catch (Exception e)
+        {
+            init_result = false;
+            init_error = e.Message;
+        }
+    }
+
+    private void GoHome()
+    {
+        navigationManager.NavigateTo("/");
+    }
+    private void Reset()
+    {
+
+    }
+}

@@ -1,0 +1,46 @@
+﻿@using System.Security.Claims
+@using Microsoft.Extensions.Caching.Memory
+@using OpenWebBlazor.ViewModels
+@inject OpenWebBlazor.Services.MenuService MenuService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IMemoryCache Cache
+
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="" style="color:#fff;">OpenWeb Blazor</a>
+    </div>
+</div>
+<div class="nav-scrollable">
+    <Menu Mode="MenuMode.Inline" Accordion="true">
+        @if (menus != null)
+        {
+            @foreach (var item in menus.Where(a => a.IsShow))
+            {
+                <SubMenu Key="@item.Id.ToString()" Title="@item.Name">
+                    @foreach (var child in item.Items.Where(a => a.IsShow))
+                    {
+                        <MenuItem Key="@child.Id.ToString()" RouterLink="@child.Path">
+                            @child.Name
+                        </MenuItem>
+                    }
+                </SubMenu>
+            }
+        }
+    </Menu>
+</div>
+
+@code {
+    private List<WebMenuTree> menus { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        var user_id = user.FindFirstValue("UserId");
+        if (!String.IsNullOrEmpty(user_id))
+        {
+            menus = Cache.Get<List<WebMenuTree>>(user_id);
+        }
+        await base.OnInitializedAsync();
+    }
+}
